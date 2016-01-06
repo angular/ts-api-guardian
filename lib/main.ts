@@ -8,7 +8,7 @@ export function publicApi(file: string): string[] {
   return publicApiInternal(getCompilerHost(), file);
 }
 
-export function publicApiInternal(host:ts.CompilerHost, fileName:string):string[] {
+export function publicApiInternal(host: ts.CompilerHost, fileName: string): string[] {
   var resolvesSymbols = getResolvedSymbols(fileName, host);
   const m = new MetadataAggregator();
   return flatten(resolvesSymbols.map(s => {
@@ -25,19 +25,18 @@ function getResolvedSymbols(fileName: string, host: ts.CompilerHost): ts.Symbol[
   const entryPoint = sourceFiles.filter(sf => sf.fileName === normalizedFileName)[0];
   const ms = moduleSymbol(entryPoint);
   const rawSymbols = ms ? (typeChecker.getExportsOfModule(ms) || []) : [];
-  return rawSymbols.map(s => {
-    return (s.flags & ts.SymbolFlags.Alias) ? typeChecker.getAliasedSymbol(s) : s;
-  });
+  return rawSymbols.map(
+      s => { return (s.flags & ts.SymbolFlags.Alias) ? typeChecker.getAliasedSymbol(s) : s; });
 }
 
-function moduleSymbol(sourceFile: ts.SourceFile):ts.Symbol {
+function moduleSymbol(sourceFile: ts.SourceFile): ts.Symbol {
   return (<any>sourceFile).symbol;
 }
 
 function getCompilerHost(): ts.CompilerHost {
   var defaultLibFileName = ts.getDefaultLibFileName({});
   defaultLibFileName = normalizeSlashes(defaultLibFileName);
-  const host:ts.CompilerHost = {
+  const host: ts.CompilerHost = {
     getSourceFile: (sourceName, languageVersion) => {
       var sourcePath = sourceName;
       if (sourceName === defaultLibFileName) {
@@ -61,8 +60,8 @@ function getCompilerHost(): ts.CompilerHost {
 }
 
 function getModuleResolver(compilerHost: ts.CompilerHost) {
-  return (moduleNames:string[], containingFile:string):ts.ResolvedModule[] => {
-    let res:ts.ResolvedModule[] = [];
+  return (moduleNames: string[], containingFile: string): ts.ResolvedModule[] => {
+    let res: ts.ResolvedModule[] = [];
     for (let mod of moduleNames) {
       let lookupRes = ts.nodeModuleNameResolver(mod, containingFile, compilerHost);
       if (lookupRes.resolvedModule) {
@@ -80,8 +79,10 @@ function getModuleResolver(compilerHost: ts.CompilerHost) {
   };
 }
 
-function normalizeSlashes(path: string) { return path.replace(/\\/g, '/'); }
+function normalizeSlashes(path: string) {
+  return path.replace(/\\/g, '/');
+}
 
-function flatten<T>(nestedArray: T[][]):T[] {
+function flatten<T>(nestedArray: T[][]): T[] {
   return nestedArray.reduce((a, b) => a.concat(b), []);
 }

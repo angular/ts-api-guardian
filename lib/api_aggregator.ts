@@ -3,7 +3,7 @@ import * as ts from 'typescript';
 export abstract class Base<T> {
   abstract mapNode(n: ts.Node): T;
 
-  mapNodes(nodes: ts.Node[]):T[] { return  nodes ? nodes.map((n) => this.mapNode(n)) : []; }
+  mapNodes(nodes: ts.Node[]): T[] { return nodes ? nodes.map((n) => this.mapNode(n)) : []; }
 }
 
 export default class PublicApiAggregator extends Base<string[]> {
@@ -111,7 +111,8 @@ export default class PublicApiAggregator extends Base<string[]> {
     return `${getName(node)}:${getType(node)}`;
   }
 
-  private getClassLike(keyword: string, decl: ts.ClassDeclaration | ts.InterfaceDeclaration): string[] {
+  private getClassLike(keyword: string, decl: ts.ClassDeclaration | ts.InterfaceDeclaration):
+      string[] {
     const name = getName(decl);
     const typeParams = typesToString(decl.typeParameters);
     const nameWithTypes = typeParams ? `${name}<${typeParams}>` : name;
@@ -146,7 +147,8 @@ class TypeExtract extends Base<string> {
       case ts.SyntaxKind.TypeReference:
         const typeRef = <ts.TypeReferenceNode>node;
         const name = this.mapNode(typeRef.typeName);
-        const typeParams = typeRef.typeArguments ? this.mapNodes(typeRef.typeArguments).join(", ") : null;
+        const typeParams =
+            typeRef.typeArguments ? this.mapNodes(typeRef.typeArguments).join(", ") : null;
         return typeParams ? `${name}<${typeParams}>` : name;
 
       case ts.SyntaxKind.TypeParameter:
@@ -202,7 +204,7 @@ function hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
 }
 
 function reportError(n: ts.Node, message: string) {
-  const file = n.getSourceFile() ;
+  const file = n.getSourceFile();
   const fileName = file.fileName;
   const start = n.getStart(file);
   const pos = file.getLineAndCharacterOfPosition(start);
@@ -211,7 +213,7 @@ function reportError(n: ts.Node, message: string) {
   throw new Error(fullMessage);
 }
 
-function flatten<T>(nestedArray: T[][]):T[] {
+function flatten<T>(nestedArray: T[][]): T[] {
   return nestedArray.reduce((a, b) => a.concat(b), []);
 }
 

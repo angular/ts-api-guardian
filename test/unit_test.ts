@@ -5,7 +5,8 @@ import * as ts from 'typescript';
 
 describe('unit test', () => {
   it("should support classes", () => {
-    check(`
+    check(
+        `
       export class A {
         field:string;
 
@@ -13,136 +14,167 @@ describe('unit test', () => {
           return 1;
         }
       }
-    `, ["A", "A.field:string", "A.method(a:string):number"]);
+    `,
+        ["A", "A.field:string", "A.method(a:string):number"]);
   });
 
   it("should include constructors", () => {
-    check(`
+    check(
+        `
       export class A {
         constructor(a:string) {}
       }
-    `, ["A", "A.constructor(a:string)"]);
+    `,
+        ["A", "A.constructor(a:string)"]);
   });
 
   it("should support interfaces", () => {
-    check(`
+    check(
+        `
       export interface A {
         field:string;
         method(a:string):number;
       }
-    `, ["A", "A.field:string", "A.method(a:string):number"]);
+    `,
+        ["A", "A.field:string", "A.method(a:string):number"]);
   });
 
   it("should support generics", () => {
-    check(`
+    check(
+        `
       export class A<T> {
         field:T;
         method(a:T):T { return null; }
       }
-    `, ["A<T>", "A.field:T", "A.method(a:T):T"]);
+    `,
+        ["A<T>", "A.field:T", "A.method(a:T):T"]);
   });
 
   it("should support static members", () => {
-    check(`
+    check(
+        `
       export class A {
         static field: string;
         static method(a: string): number {}
       }
-    `, ["A", "A.field:string", "A.method(a:string):number"]);
+    `,
+        ["A", "A.field:string", "A.method(a:string):number"]);
   });
 
   it("should support arrays", () => {
-    check(`
+    check(
+        `
       export var a: Array<Array<string>>;
       export var b: string[][];
-    `, ["var a:Array<Array<string>>", "var b:string[][]"]);
+    `,
+        ["var a:Array<Array<string>>", "var b:string[][]"]);
   });
 
   it("should support map", () => {
-    check(`
+    check(
+        `
       export var a: Map<Map<string, number>, number>;
-    `, ["var a:Map<Map<string, number>, number>"]);
+    `,
+        ["var a:Map<Map<string, number>, number>"]);
   });
 
   it("should support getters and setters", () => {
-    check(`
+    check(
+        `
       export class A {
         get a(): string {}
         set a(v:string){}
         get b() {}
         set b(v) {}
       }
-    `, ["A", "A.a:string", "A.a=(v:string)", "A.b:any", "A.b=(v:any)"]);
+    `,
+        ["A", "A.a:string", "A.a=(v:string)", "A.b:any", "A.b=(v:any)"]);
   });
 
   it("should support function declarations", () => {
-    check(`
+    check(
+        `
       export function f(a:string):number {}
-    `, ["f(a:string):number"]);
+    `,
+        ["f(a:string):number"]);
   });
 
   it("should support enums", () => {
-    check(`
+    check(
+        `
       export enum A {
         Red = 1,
         Green
       }
-    `, ["A", "A.Red", "A.Green"]);
+    `,
+        ["A", "A.Red", "A.Green"]);
   });
 
   it("should support type literals", () => {
-    check(`
+    check(
+        `
       export function f({x,
         y,  z}: {x?: string, y: number,z:any}):void {}
-    `, ["f({x,y,z}:{x?:string, y:number, z:any}):void"]);
+    `,
+        ["f({x,y,z}:{x?:string, y:number, z:any}):void"]);
   });
 
   it("should support index types", () => {
-    check(`
+    check(
+        `
       export function f(a:{[key: string]:any}):void {}
-    `, ["f(a:{[key:string]:any}):void"]);
+    `,
+        ["f(a:{[key:string]:any}):void"]);
   });
 
   it("should ignore private methods", () => {
-    check(`
+    check(
+        `
       export class A {
         fa(){}
         protected fb() {}
         private fc() {}
       }
-    `, ["A", "A.fa():any", "A.fb():any"]);
+    `,
+        ["A", "A.fa():any", "A.fb():any"]);
   });
 
   it("should ignore private props", () => {
-    check(`
+    check(
+        `
       export class A {
         fa;
         protected fb;
         private fc;
       }
-    `, ["A", "A.fa:any", "A.fb:any"]);
+    `,
+        ["A", "A.fa:any", "A.fb:any"]);
   });
 
   it("should ignore members staring with an _", () => {
-    check(`
+    check(
+        `
       export class A {
         _fa;
         _fb(){}
       }
-    `, ["A"]);
+    `,
+        ["A"]);
   });
 
   it("should ignore computed properties", () => {
-    check(`
+    check(
+        `
       export class A {
         a(){}
         ['b'](){}
       }
-    `, ["A", "A.a():any"]);
+    `,
+        ["A", "A.a():any"]);
   });
 });
 
-function check(contents:string, expected:string[]) {
+function check(contents: string, expected: string[]) {
   var mockHost: any = {
     getSourceFile: (sourceName, languageVersion) => {
       if (sourceName !== "file.ts") return undefined;

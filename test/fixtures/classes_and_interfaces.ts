@@ -1,11 +1,7 @@
 export class A {
-  field:string;
+  field: string;
 
-  method(a:string):number {
-    return 1;
-  }
+  method(a: string): number { return 1; }
 }
 
-export interface B {
-  field:A;
-}
+export interface B { field: A; }
