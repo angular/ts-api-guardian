@@ -1,0 +1,45 @@
+{
+  "name": "ts-api-guardian",
+  "version": "0.0.1",
+  "description": "Guards the API of TypeScript libraries!",
+  "main": "build/lib/main.js",
+  "typings": "build/definitions/main.d.ts",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "typescript": "1.7.3"
+  },
+  "devDependencies": {
+    "chai": "^2.1.1",
+    "fs-extra": "^0.18.0",
+    "gulp": "^3.8.11",
+    "gulp-mocha": "^2.0.0",
+    "source-map": "^0.4.2",
+    "source-map-support": "^0.3.1",
+    "gulp-sourcemaps": "^1.5.0",
+    "gulp-typescript": "^2.7.6",
+    "gulp-util": "^3.0.4",
+    "merge2": "^0.3.1",
+    "tsd": "^0.6.0"
+  },
+  "scripts": {
+    "prepublish": "npm install tsd@^0.6.0 && tsd reinstall --overwrite && gulp compile",
+    "test": "gulp test"
+  },
+  "repository": {
+  },
+  "keywords": [
+    "typescript"
+  ],
+  "contributors": [
+    "Alex Eagle <alexeagle@google.com> (https://angularjs.org/)",
+    "Martin Probst <martinprobst@google.com> (https://angularjs.org/)",
+    "Victor Savkin<vsavkin@google.com> (https://victorsavkin.com)"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/angular/ts-api-guardian/issues"
+  },
+  "homepage": "https://github.com/angular/ts-api-guardian"
+}
