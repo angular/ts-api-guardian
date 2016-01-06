@@ -1,5 +1,7 @@
 require('source-map-support').install();
 
+var clangFormat = require('clang-format');
+var formatter = require('gulp-clang-format');
 var fs = require('fs');
 var gulp = require('gulp');
 var merge = require('merge2');
@@ -7,6 +9,12 @@ var sourcemaps = require('gulp-sourcemaps');
 var ts = require('gulp-typescript');
 var typescript = require('typescript');
 var mocha = require('gulp-mocha');
+
+gulp.task('check-format', function() {
+  return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts'])
+      .pipe(formatter.checkFormat('file', clangFormat))
+      .on('warning', onError);
+});
 
 var hasError;
 var failOnError = false;
