@@ -30,6 +30,8 @@
     "test": "gulp test"
   },
   "repository": {
+    "type": "git",
+    "url": "https://github.com/angular/ts-api-guardian.git"
   },
   "keywords": [
     "typescript"
@@ -39,7 +41,7 @@
     "Martin Probst <martinprobst@google.com> (https://angularjs.org/)",
     "Victor Savkin<vsavkin@google.com> (https://victorsavkin.com)"
   ],
-  "license": "Apache-2.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/angular/ts-api-guardian/issues"
   },
