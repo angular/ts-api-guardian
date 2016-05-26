@@ -172,6 +172,50 @@ describe('unit test', () => {
     `,
         ["A", "A.a():any"]);
   });
+
+  it("should include public properties defined via constructor", () => {
+    check(
+        `
+      export class A {
+        constructor(public prop: number, arg1: number) {}
+      }
+    `,
+        ["A", "A.constructor(prop:number, arg1:number)", "A.prop:number"]
+    );
+  });
+
+  it("should include protected properties defined via constructor", () => {
+    check(
+        `
+      export class A {
+        constructor(protected prop: number, arg1: number) {}
+      }
+    `,
+        ["A", "A.constructor(prop:number, arg1:number)", "A.prop:number //protected"]
+    );
+  });
+
+  it("should include default value of public properties defined via constructor", () => {
+    check(
+        `
+      export class A {
+        constructor(public prop = 3) {}
+      }
+    `,
+        ["A", "A.constructor(prop:any=3)", "A.prop:any=3"]
+    );
+  });
+
+  it("should ignore private properties defined via constructor", () => {
+    check(
+        `
+    export class A {
+      constructor(private prop = 3) {}
+    }
+  `,
+        ["A", "A.constructor(prop:any=3)"]
+    );
+  });
 });
 
 function check(contents: string, expected: string[]) {

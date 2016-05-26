@@ -24,7 +24,12 @@ describe('integration test', () => {
   it("should include members of classes and interfaces", () => {
     chai.assert.deepEqual(
         main.publicApi("test/fixtures/classes_and_interfaces.ts"),
-        ["A", "A.field:string", "A.method(a:string):number", "B", "B.field:A"]);
+        ["A", "A.field:string", "A.method(a:string):number", "B", "B.field:A", "C",
+         "C.constructor(someProp:string, propWithDefault:any=3, privateProp:any, protectedProp:number)",
+         "C.someProp:string",
+         "C.propWithDefault:any=3",
+         "C.protectedProp:number //protected"
+         ]);
   });
 
   it("should include members reexported classes", () => {

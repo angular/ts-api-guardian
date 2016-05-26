@@ -40,7 +40,7 @@ export default class PublicApiAggregator extends Base<string[]> {
         return [this.getProperty(<ts.PropertyDeclaration>node)];
 
       case ts.SyntaxKind.Constructor:
-        return [this.getConstructor(<ts.ConstructorDeclaration>node)];
+        return [this.getConstructor(<ts.ConstructorDeclaration>node), ...this.getConstructorProperties(<ts.ConstructorDeclaration>node)];
 
       case ts.SyntaxKind.PropertySignature:
         return [this.getProperty(<ts.PropertyDeclaration>node)];
@@ -85,6 +85,25 @@ export default class PublicApiAggregator extends Base<string[]> {
     return `constructor(${params})`;
   }
 
+  private getConstructorProperties(node: ts.FunctionLikeDeclaration): string[] {
+    const properties: string[] = [];
+    node.parameters.forEach(p => {
+      let includeProp = false;
+      let accessModifier = ''; // we default to "" and not print "public" for public properties
+      if (hasFlag(p, ts.NodeFlags.Public)) {
+        includeProp = true;
+      } else if (hasFlag(p, ts.NodeFlags.Protected)) {
+        includeProp = true;
+        accessModifier = '//protected';
+      }
+
+      if (includeProp) {
+        properties.push(`${this.getParameter(p)} ${accessModifier}`.trim());
+      }
+    });
+    return properties;
+  }
+
   private getGetter(node: ts.AccessorDeclaration): string {
     const name = getName(node);
     const type = this.getColonType(node);
@@ -108,7 +127,7 @@ export default class PublicApiAggregator extends Base<string[]> {
   }
 
   private getParameter(node: ts.ParameterDeclaration): string {
-    return `${getName(node)}:${getType(node)}`;
+    return `${getName(node)}:${getType(node)}${getInitializer(node)}`;
   }
 
   private getClassLike(keyword: string, decl: ts.ClassDeclaration | ts.InterfaceDeclaration):
@@ -232,6 +251,15 @@ function getName(node: ts.Node): string {
 function getType(node: ts.Node): string {
   const t = typeToString((<any>node).type);
   return t ? t : "any";
+}
+
+
+function getInitializer(node: ts.ParameterDeclaration): string {
+  if (node.initializer) {
+    return '=' + node.initializer.getText();
+  } else {
+    return '';
+  }
 }
 
 function removeSpaces(s: string): string {
