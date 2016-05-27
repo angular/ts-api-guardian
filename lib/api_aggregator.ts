@@ -130,7 +130,7 @@ export default class PublicApiAggregator extends Base<string[]> {
   }
 
   private getParameter(node: ts.ParameterDeclaration): string {
-    return `${getName(node)}:${getType(node)}${getInitializer(node)}`;
+    return `${getName(node)}${getOptional(node)}:${getType(node)}${getInitializer(node)}`;
   }
 
   private getClassLike(keyword: string, decl: ts.ClassDeclaration|ts.InterfaceDeclaration):
@@ -249,6 +249,10 @@ function getName(node: ts.Node): string {
   } else {
     reportError(node, 'Cannot get name');
   }
+}
+
+function getOptional(node: ts.ParameterDeclaration): string {
+  return (node.questionToken) ? '?' : '';
 }
 
 function getType(node: ts.Node): string {

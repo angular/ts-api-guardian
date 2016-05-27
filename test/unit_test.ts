@@ -212,6 +212,19 @@ describe('unit test', () => {
   `,
         ['A', 'A.constructor(prop:any=3)']);
   });
+
+  it('should recognize optional parameters of functions, methods and constructors', () => {
+    check(
+        `
+    export class A {
+      constructor(arg?: number) {}
+      methodA(arg?:number) {}
+    }
+
+    export function b(arg?: string) {}
+  `,
+        ['A', 'A.constructor(arg?:number)', 'A.methodA(arg?:number):any', 'b(arg?:string):any']);
+  });
 });
 
 function check(contents: string, expected: string[]) {
