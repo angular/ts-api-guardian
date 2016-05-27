@@ -1,6 +1,6 @@
 {
   "name": "ts-api-guardian",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Guards the API of TypeScript libraries!",
   "main": "build/lib/main.js",
   "typings": "build/definitions/main.d.ts",
@@ -29,8 +29,7 @@
     "prepublish": "npm install tsd@^0.6.0 && tsd reinstall --overwrite && gulp compile",
     "test": "gulp test"
   },
-  "repository": {
-  },
+  "repository": {},
   "keywords": [
     "typescript"
   ],
