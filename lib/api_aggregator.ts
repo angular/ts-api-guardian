@@ -40,7 +40,10 @@ export default class PublicApiAggregator extends Base<string[]> {
         return [this.getProperty(<ts.PropertyDeclaration>node)];
 
       case ts.SyntaxKind.Constructor:
-        return [this.getConstructor(<ts.ConstructorDeclaration>node), ...this.getConstructorProperties(<ts.ConstructorDeclaration>node)];
+        return [
+          this.getConstructor(<ts.ConstructorDeclaration>node),
+          ...this.getConstructorProperties(<ts.ConstructorDeclaration>node)
+        ];
 
       case ts.SyntaxKind.PropertySignature:
         return [this.getProperty(<ts.PropertyDeclaration>node)];
@@ -89,7 +92,7 @@ export default class PublicApiAggregator extends Base<string[]> {
     const properties: string[] = [];
     node.parameters.forEach(p => {
       let includeProp = false;
-      let accessModifier = ''; // we default to "" and not print "public" for public properties
+      let accessModifier = '';  // we default to "" and not print "public" for public properties
       if (hasFlag(p, ts.NodeFlags.Public)) {
         includeProp = true;
       } else if (hasFlag(p, ts.NodeFlags.Protected)) {
@@ -123,14 +126,14 @@ export default class PublicApiAggregator extends Base<string[]> {
   }
 
   private getParameters(nodes: ts.NodeArray<ts.ParameterDeclaration>): string {
-    return nodes.map(p => this.getParameter(p)).join(", ");
+    return nodes.map(p => this.getParameter(p)).join(', ');
   }
 
   private getParameter(node: ts.ParameterDeclaration): string {
     return `${getName(node)}:${getType(node)}${getInitializer(node)}`;
   }
 
-  private getClassLike(keyword: string, decl: ts.ClassDeclaration | ts.InterfaceDeclaration):
+  private getClassLike(keyword: string, decl: ts.ClassDeclaration|ts.InterfaceDeclaration):
       string[] {
     const name = getName(decl);
     const typeParams = typesToString(decl.typeParameters);
@@ -161,13 +164,13 @@ class TypeExtract extends Base<string> {
         return `{${strMembers.join(", ")}}`;
 
       case ts.SyntaxKind.UnionType:
-        return this.mapNodes((<ts.UnionTypeNode>node).types).join("|");
+        return this.mapNodes((<ts.UnionTypeNode>node).types).join('|');
 
       case ts.SyntaxKind.TypeReference:
         const typeRef = <ts.TypeReferenceNode>node;
         const name = this.mapNode(typeRef.typeName);
         const typeParams =
-            typeRef.typeArguments ? this.mapNodes(typeRef.typeArguments).join(", ") : null;
+            typeRef.typeArguments ? this.mapNodes(typeRef.typeArguments).join(', ') : null;
         return typeParams ? `${name}<${typeParams}>` : name;
 
       case ts.SyntaxKind.TypeParameter:
@@ -190,22 +193,22 @@ class TypeExtract extends Base<string> {
         return ident.text;
 
       case ts.SyntaxKind.NumberKeyword:
-        return "number";
+        return 'number';
 
       case ts.SyntaxKind.StringKeyword:
-        return "string";
+        return 'string';
 
       case ts.SyntaxKind.VoidKeyword:
-        return "void";
+        return 'void';
 
       case ts.SyntaxKind.BooleanKeyword:
-        return "boolean";
+        return 'boolean';
 
       case ts.SyntaxKind.AnyKeyword:
-        return "any";
+        return 'any';
 
       default:
-        return "unknown";
+        return 'unknown';
     }
   }
 }
@@ -215,7 +218,7 @@ function typeToString(node: ts.Node): string {
 }
 
 function typesToString(nodes: ts.Node[]): string {
-  return nodes ? new TypeExtract().mapNodes(nodes).join(",") : null;
+  return nodes ? new TypeExtract().mapNodes(nodes).join(',') : null;
 }
 
 function hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
@@ -244,13 +247,13 @@ function getName(node: ts.Node): string {
     const sig = <ts.IndexSignatureDeclaration>node;
     return `[${removeSpaces(sig.parameters[0].getText())}]`;
   } else {
-    reportError(node, "Cannot get name");
+    reportError(node, 'Cannot get name');
   }
 }
 
 function getType(node: ts.Node): string {
   const t = typeToString((<any>node).type);
-  return t ? t : "any";
+  return t ? t : 'any';
 }
 
 
@@ -263,5 +266,5 @@ function getInitializer(node: ts.ParameterDeclaration): string {
 }
 
 function removeSpaces(s: string): string {
-  return s.replace(/\s+/g, "");
+  return s.replace(/\s+/g, '');
 }

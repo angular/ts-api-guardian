@@ -4,7 +4,7 @@ import main = require('../lib/main');
 import * as ts from 'typescript';
 
 describe('unit test', () => {
-  it("should support classes", () => {
+  it('should support classes', () => {
     check(
         `
       export class A {
@@ -15,20 +15,20 @@ describe('unit test', () => {
         }
       }
     `,
-        ["A", "A.field:string", "A.method(a:string):number"]);
+        ['A', 'A.field:string', 'A.method(a:string):number']);
   });
 
-  it("should include constructors", () => {
+  it('should include constructors', () => {
     check(
         `
       export class A {
         constructor(a:string) {}
       }
     `,
-        ["A", "A.constructor(a:string)"]);
+        ['A', 'A.constructor(a:string)']);
   });
 
-  it("should support interfaces", () => {
+  it('should support interfaces', () => {
     check(
         `
       export interface A {
@@ -36,10 +36,10 @@ describe('unit test', () => {
         method(a:string):number;
       }
     `,
-        ["A", "A.field:string", "A.method(a:string):number"]);
+        ['A', 'A.field:string', 'A.method(a:string):number']);
   });
 
-  it("should support generics", () => {
+  it('should support generics', () => {
     check(
         `
       export class A<T> {
@@ -47,10 +47,10 @@ describe('unit test', () => {
         method(a:T):T { return null; }
       }
     `,
-        ["A<T>", "A.field:T", "A.method(a:T):T"]);
+        ['A<T>', 'A.field:T', 'A.method(a:T):T']);
   });
 
-  it("should support static members", () => {
+  it('should support static members', () => {
     check(
         `
       export class A {
@@ -58,27 +58,27 @@ describe('unit test', () => {
         static method(a: string): number {}
       }
     `,
-        ["A", "A.field:string", "A.method(a:string):number"]);
+        ['A', 'A.field:string', 'A.method(a:string):number']);
   });
 
-  it("should support arrays", () => {
+  it('should support arrays', () => {
     check(
         `
       export var a: Array<Array<string>>;
       export var b: string[][];
     `,
-        ["var a:Array<Array<string>>", "var b:string[][]"]);
+        ['var a:Array<Array<string>>', 'var b:string[][]']);
   });
 
-  it("should support map", () => {
+  it('should support map', () => {
     check(
         `
       export var a: Map<Map<string, number>, number>;
     `,
-        ["var a:Map<Map<string, number>, number>"]);
+        ['var a:Map<Map<string, number>, number>']);
   });
 
-  it("should support getters and setters", () => {
+  it('should support getters and setters', () => {
     check(
         `
       export class A {
@@ -88,18 +88,18 @@ describe('unit test', () => {
         set b(v) {}
       }
     `,
-        ["A", "A.a:string", "A.a=(v:string)", "A.b:any", "A.b=(v:any)"]);
+        ['A', 'A.a:string', 'A.a=(v:string)', 'A.b:any', 'A.b=(v:any)']);
   });
 
-  it("should support function declarations", () => {
+  it('should support function declarations', () => {
     check(
         `
       export function f(a:string):number {}
     `,
-        ["f(a:string):number"]);
+        ['f(a:string):number']);
   });
 
-  it("should support enums", () => {
+  it('should support enums', () => {
     check(
         `
       export enum A {
@@ -107,27 +107,27 @@ describe('unit test', () => {
         Green
       }
     `,
-        ["A", "A.Red", "A.Green"]);
+        ['A', 'A.Red', 'A.Green']);
   });
 
-  it("should support type literals", () => {
+  it('should support type literals', () => {
     check(
         `
       export function f({x,
         y,  z}: {x?: string, y: number,z:any}):void {}
     `,
-        ["f({x,y,z}:{x?:string, y:number, z:any}):void"]);
+        ['f({x,y,z}:{x?:string, y:number, z:any}):void']);
   });
 
-  it("should support index types", () => {
+  it('should support index types', () => {
     check(
         `
       export function f(a:{[key: string]:any}):void {}
     `,
-        ["f(a:{[key:string]:any}):void"]);
+        ['f(a:{[key:string]:any}):void']);
   });
 
-  it("should ignore private methods", () => {
+  it('should ignore private methods', () => {
     check(
         `
       export class A {
@@ -136,10 +136,10 @@ describe('unit test', () => {
         private fc() {}
       }
     `,
-        ["A", "A.fa():any", "A.fb():any"]);
+        ['A', 'A.fa():any', 'A.fb():any']);
   });
 
-  it("should ignore private props", () => {
+  it('should ignore private props', () => {
     check(
         `
       export class A {
@@ -148,10 +148,10 @@ describe('unit test', () => {
         private fc;
       }
     `,
-        ["A", "A.fa:any", "A.fb:any"]);
+        ['A', 'A.fa:any', 'A.fb:any']);
   });
 
-  it("should ignore members staring with an _", () => {
+  it('should ignore members staring with an _', () => {
     check(
         `
       export class A {
@@ -159,10 +159,10 @@ describe('unit test', () => {
         _fb(){}
       }
     `,
-        ["A"]);
+        ['A']);
   });
 
-  it("should ignore computed properties", () => {
+  it('should ignore computed properties', () => {
     check(
         `
       export class A {
@@ -170,69 +170,65 @@ describe('unit test', () => {
         ['b'](){}
       }
     `,
-        ["A", "A.a():any"]);
+        ['A', 'A.a():any']);
   });
 
-  it("should include public properties defined via constructor", () => {
+  it('should include public properties defined via constructor', () => {
     check(
         `
       export class A {
         constructor(public prop: number, arg1: number) {}
       }
     `,
-        ["A", "A.constructor(prop:number, arg1:number)", "A.prop:number"]
-    );
+        ['A', 'A.constructor(prop:number, arg1:number)', 'A.prop:number']);
   });
 
-  it("should include protected properties defined via constructor", () => {
+  it('should include protected properties defined via constructor', () => {
     check(
         `
       export class A {
         constructor(protected prop: number, arg1: number) {}
       }
     `,
-        ["A", "A.constructor(prop:number, arg1:number)", "A.prop:number //protected"]
-    );
+        ['A', 'A.constructor(prop:number, arg1:number)', 'A.prop:number //protected']);
   });
 
-  it("should include default value of public properties defined via constructor", () => {
+  it('should include default value of public properties defined via constructor', () => {
     check(
         `
       export class A {
         constructor(public prop = 3) {}
       }
     `,
-        ["A", "A.constructor(prop:any=3)", "A.prop:any=3"]
-    );
+        ['A', 'A.constructor(prop:any=3)', 'A.prop:any=3']);
   });
 
-  it("should ignore private properties defined via constructor", () => {
+  it('should ignore private properties defined via constructor', () => {
     check(
         `
     export class A {
       constructor(private prop = 3) {}
     }
   `,
-        ["A", "A.constructor(prop:any=3)"]
-    );
+        ['A', 'A.constructor(prop:any=3)']);
   });
 });
 
 function check(contents: string, expected: string[]) {
   var mockHost: any = {
     getSourceFile: (sourceName, languageVersion) => {
-      if (sourceName !== "file.ts") return undefined;
+      if (sourceName !== 'file.ts') return undefined;
       return ts.createSourceFile(sourceName, contents, languageVersion, true);
     },
     writeFile(name, text, writeByteOrderMark) {},
-    fileExists: (filename) => filename === "file.ts",
+    fileExists: (filename) => filename === 'file.ts',
     readFile: (filename) => contents,
-    getDefaultLibFileName: () => "lib.ts",
+    getDefaultLibFileName: () => 'lib.ts',
     useCaseSensitiveFileNames: () => true,
     getCanonicalFileName: (filename) => filename,
     getCurrentDirectory: () => './',
     getNewLine: () => '\n',
   };
-  const actual = main.publicApiInternal(mockHost, "file.ts");
+  const actual = main.publicApiInternal(mockHost, 'file.ts');
   chai.assert.deepEqual(actual, expected);
 }
