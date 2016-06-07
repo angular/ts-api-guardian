@@ -8,9 +8,9 @@ export function publicApi(file: string): string[] {
 }
 
 export function publicApiInternal(host: ts.CompilerHost, fileName: string): string[] {
-  var resolvesSymbols = getResolvedSymbols(fileName, host);
+  var resolvedSymbols = getResolvedSymbols(fileName, host);
   const m = new MetadataAggregator();
-  return flatten(resolvesSymbols.map(s => {
+  return flatten(resolvedSymbols.map(s => {
     const decl = s.valueDeclaration ? s.valueDeclaration : s.declarations[0];
     return m.mapNode(decl);
   }));
