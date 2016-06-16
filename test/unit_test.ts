@@ -1,260 +1,271 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
-import main = require('../lib/main');
 import * as ts from 'typescript';
+import {publicApiInternal} from '../lib/serializer';
+
+const classesAndInterfaces = `
+  export declare class A {
+      field: string;
+      method(a: string): number;
+  }
+  export interface B {
+      field: A;
+  }
+  export declare class C {
+      someProp: string;
+      propWithDefault: number;
+      private privateProp;
+      protected protectedProp: number;
+      constructor(someProp: string, propWithDefault: number, privateProp: any, protectedProp: number);
+  }
+`;
 
 describe('unit test', () => {
-  it('should support classes', () => {
-    check(
-        `
-      export class A {
-        field:string;
-
-        method(a:string):number {
-          return 1;
-        }
-      }
-    `,
-        ['A', 'A.field:string', 'A.method(a:string):number']);
+  let _warn = null;
+  let warnings: string[] = [];
+  beforeEach(() => {
+    _warn = console.warn;
+    console.warn = (...args: string[]) => warnings.push(args.join(' '));
   });
 
-  it('should include constructors', () => {
-    check(
-        `
-      export class A {
-        constructor(a:string) {}
-      }
-    `,
-        ['A', 'A.constructor(a:string)']);
-  });
-
-  it('should support interfaces', () => {
-    check(
-        `
-      export interface A {
-        field:string;
-        method(a:string):number;
-      }
-    `,
-        ['A', 'A.field:string', 'A.method(a:string):number']);
-  });
-
-  it('should support generics', () => {
-    check(
-        `
-      export class A<T> {
-        field:T;
-        method(a:T):T { return null; }
-      }
-    `,
-        ['A<T>', 'A.field:T', 'A.method(a:T):T']);
-  });
-
-  it('should support static members', () => {
-    check(
-        `
-      export class A {
-        static field: string;
-        static method(a: string): number {}
-      }
-    `,
-        ['A', 'A.field:string', 'A.method(a:string):number']);
-  });
-
-  it('should support arrays', () => {
-    check(
-        `
-      export var a: Array<Array<string>>;
-      export var b: string[][];
-    `,
-        ['var a:Array<Array<string>>', 'var b:string[][]']);
-  });
-
-  it('should support tuples', () => {
-    check(
-        `
-      export var a: [Array<string>, string];
-      export var b: [string[], string];
-      export var c: [[string, string], string];
-    `,
-        [
-          'var a:[Array<string>, string]', 'var b:[string[], string]',
-          'var c:[[string, string], string]'
-        ]);
-  });
-
-  it('should support map', () => {
-    check(
-        `
-      export var a: Map<Map<string, number>, number>;
-    `,
-        ['var a:Map<Map<string, number>, number>']);
-  });
-
-  it('should support getters and setters', () => {
-    check(
-        `
-      export class A {
-        get a(): string {}
-        set a(v:string){}
-        get b() {}
-        set b(v) {}
-      }
-    `,
-        ['A', 'A.a:string', 'A.a=(v:string)', 'A.b:any', 'A.b=(v:any)']);
-  });
-
-  it('should support function declarations', () => {
-    check(
-        `
-      export function f(a:string):number {}
-    `,
-        ['f(a:string):number']);
-  });
-
-  it('should support enums', () => {
-    check(
-        `
-      export enum A {
-        Red = 1,
-        Green
-      }
-    `,
-        ['A', 'A.Red', 'A.Green']);
-  });
-
-  it('should support type literals', () => {
-    check(
-        `
-      export function f({x,
-        y,  z}: {x?: string, y: number,z:any}):void {}
-    `,
-        ['f({x,y,z}:{x?:string, y:number, z:any}):void']);
-  });
-
-  it('should support index types', () => {
-    check(
-        `
-      export function f(a:{[key: string]:any}):void {}
-    `,
-        ['f(a:{[key:string]:any}):void']);
+  afterEach(() => {
+    console.warn = _warn;
+    warnings = [];
+    _warn = null;
   });
 
   it('should ignore private methods', () => {
-    check(
-        `
-      export class A {
-        fa(){}
-        protected fb() {}
-        private fc() {}
+    const input = `
+      export declare class A {
+          fa(): void;
+          protected fb(): void;
+          private fc();
       }
-    `,
-        ['A', 'A.fa():any', 'A.fb():any']);
+    `;
+    const expected = `
+      export declare class A {
+          fa(): void;
+          protected fb(): void;
+      }
+    `;
+    check({'file.d.ts': input}, expected);
   });
 
   it('should ignore private props', () => {
-    check(
-        `
-      export class A {
-        fa;
-        protected fb;
-        private fc;
+    const input = `
+      export declare class A {
+          fa: any;
+          protected fb: any;
+          private fc;
       }
-    `,
-        ['A', 'A.fa:any', 'A.fb:any']);
-  });
-
-  it('should ignore members staring with an _', () => {
-    check(
-        `
-      export class A {
-        _fa;
-        _fb(){}
+    `;
+    const expected = `
+      export declare class A {
+          fa: any;
+          protected fb: any;
       }
-    `,
-        ['A']);
+    `;
+    check({'file.d.ts': input}, expected);
   });
 
-  it('should ignore computed properties', () => {
-    check(
-        `
-      export class A {
-        a(){}
-        ['b'](){}
+  it('should support imports without capturing imports', () => {
+    const input = `
+      import {A} from './classes_and_interfaces';
+      export declare class C {
+          field: A;
       }
-    `,
-        ['A', 'A.a():any']);
-  });
-
-  it('should include public properties defined via constructor', () => {
-    check(
-        `
-      export class A {
-        constructor(public prop: number, arg1: number) {}
+    `;
+    const expected = `
+      export declare class C {
+          field: A;
       }
-    `,
-        ['A', 'A.constructor(prop:number, arg1:number)', 'A.prop:number']);
+    `;
+    check({'classes_and_interfaces.d.ts': classesAndInterfaces, 'file.d.ts': input}, expected);
   });
 
-  it('should include protected properties defined via constructor', () => {
-    check(
-        `
-      export class A {
-        constructor(protected prop: number, arg1: number) {}
+  it('should support imports with prefixes without capturing imports', () => {
+    const input = `
+      import * as t from './classes_and_interfaces';
+      export declare class C {
+          field: t.A;
       }
-    `,
-        ['A', 'A.constructor(prop:number, arg1:number)', 'A.prop:number //protected']);
-  });
-
-  it('should include default value of public properties defined via constructor', () => {
-    check(
-        `
-      export class A {
-        constructor(public prop = 3) {}
+    `;
+    const expected = `
+      export declare class C {
+          field: t.A;
       }
-    `,
-        ['A', 'A.constructor(prop:any=3)', 'A.prop:any=3']);
+    `;
+    check({'classes_and_interfaces.d.ts': classesAndInterfaces, 'file.d.ts': input}, expected);
   });
 
-  it('should ignore private properties defined via constructor', () => {
-    check(
-        `
-    export class A {
-      constructor(private prop = 3) {}
-    }
-  `,
-        ['A', 'A.constructor(prop:any=3)']);
+  it('should throw on aliased reexports', () => {
+    const input = `export { A as Apple } from './classes_and_interfaces';`;
+    checkThrows(
+        {'classes_and_interfaces.d.ts': classesAndInterfaces, 'file.d.ts': input},
+        'Symbol "A" was aliased as "Apple". Aliases are not supported.');
   });
 
-  it('should recognize optional parameters of functions, methods and constructors', () => {
-    check(
-        `
-    export class A {
-      constructor(arg?: number) {}
-      methodA(arg?:number) {}
-    }
+  it('should remove reexported external symbols', () => {
+    const input = `
+      export { Foo } from 'some-external-module-that-cannot-be-resolved';
+    `;
+    const expected = `
+    `;
+    check({'classes_and_interfaces.d.ts': classesAndInterfaces, 'file.d.ts': input}, expected);
+    chai.assert.deepEqual(warnings, ['Warning: No export declaration found for symbol "Foo"']);
+  });
 
-    export function b(arg?: string) {}
-  `,
-        ['A', 'A.constructor(arg?:number)', 'A.methodA(arg?:number):any', 'b(arg?:string):any']);
+  it('should sort exports', () => {
+    const input = `
+      export declare type E = string;
+      export interface D {
+          e: number;
+      }
+      export declare var e: C;
+      export declare class C {
+          e: number;
+          d: string;
+      }
+      export declare function b(): boolean;
+      export declare const a: string;
+    `;
+    const expected = `
+      export declare const a: string;
+
+      export declare function b(): boolean;
+
+      export declare class C {
+          e: number;
+          d: string;
+      }
+
+      export interface D {
+          e: number;
+      }
+
+      export declare var e: C;
+
+      export declare type E = string;
+    `;
+    check({'file.d.ts': input}, expected);
+  });
+
+  it('should sort exports including re-exports', () => {
+    const submodule = `
+      export declare var e: C;
+      export declare class C {
+          e: number;
+          d: string;
+      }
+    `;
+    const input = `
+      export * from './submodule';
+      export declare type E = string;
+      export interface D {
+          e: number;
+      }
+      export declare function b(): boolean;
+      export declare const a: string;
+    `;
+    const expected = `
+      export declare const a: string;
+
+      export declare function b(): boolean;
+
+      export declare class C {
+          e: number;
+          d: string;
+      }
+
+      export interface D {
+          e: number;
+      }
+
+      export declare var e: C;
+
+      export declare type E = string;
+    `;
+    check({'submodule.d.ts': submodule, 'file.d.ts': input}, expected);
+  });
+
+  it('should remove module comments', () => {
+    const input = `
+      /**
+       * An amazing module.
+       * @module
+       */
+      /**
+       * Foo function.
+       */
+      export declare function foo(): boolean;
+      export declare const bar: number;
+    `;
+    const expected = `
+      export declare const bar: number;
+
+      export declare function foo(): boolean;
+    `;
+    check({'file.d.ts': input}, expected);
+  });
+
+  it('should remove class and field comments', () => {
+    const input = `
+      /**
+       * Does something really cool.
+       */
+      export declare class A {
+          /**
+           * A very useful field.
+           */
+          name: string;
+          /**
+           * A very interesting getter.
+           */
+          b: string;
+      }
+    `;
+    const expected = `
+      export declare class A {
+          name: string;
+          b: string;
+      }
+    `;
+    check({'file.d.ts': input}, expected);
   });
 });
 
-function check(contents: string, expected: string[]) {
-  var mockHost: any = {
+function getMockHost(files: {[name: string]: string}): ts.CompilerHost {
+  return {
     getSourceFile: (sourceName, languageVersion) => {
-      if (sourceName !== 'file.ts') return undefined;
-      return ts.createSourceFile(sourceName, contents, languageVersion, true);
+      if (!files[sourceName]) return undefined;
+      return ts.createSourceFile(sourceName, files[sourceName], languageVersion, true);
     },
-    writeFile(name, text, writeByteOrderMark) {},
-    fileExists: (filename) => filename === 'file.ts',
-    readFile: (filename) => contents,
+    writeFile: (name, text, writeByteOrderMark) => {},
+    fileExists: (filename) => !!files[filename],
+    readFile: (filename) => stripExtraIndentation(files[filename]),
     getDefaultLibFileName: () => 'lib.ts',
     useCaseSensitiveFileNames: () => true,
     getCanonicalFileName: (filename) => filename,
     getCurrentDirectory: () => './',
     getNewLine: () => '\n',
   };
-  const actual = main.publicApiInternal(mockHost, 'file.ts');
-  chai.assert.deepEqual(actual, expected);
+}
+
+function check(files: {[name: string]: string}, expected: string) {
+  const actual = publicApiInternal(getMockHost(files), 'file.d.ts', {});
+  chai.assert.equal(stripExtraIndentation(actual), stripExtraIndentation(expected));
+}
+
+function checkThrows(files: {[name: string]: string}, error: string) {
+  chai.assert.throws(() => { publicApiInternal(getMockHost(files), 'file.d.ts', {}); }, error);
+}
+
+function stripExtraIndentation(text: string) {
+  const lines = text.trim().split('\n');
+  const commonIndent = lines.reduce((min, line) => {
+    const indent = /^( *)/.exec(line)[1].length;
+    return Math.min(min, indent);
+  }, text.length);
+
+  return lines.map(line => line.substr(commonIndent)).join('\n') + '\n';
 }

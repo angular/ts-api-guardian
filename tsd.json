@@ -11,11 +11,17 @@
     "chai/chai.d.ts": {
       "commit": "69bdfb0884020e41f17a1dd80ad4c77de2636874"
     },
-    "node/node.d.ts": {
-      "commit": "69bdfb0884020e41f17a1dd80ad4c77de2636874"
+    "diff/diff.d.ts": {
+      "commit": "1315d46f8066eec8c197914da88e98629ebc2254"
     },
-    "fs-extra/fs-extra.d.ts": {
-      "commit": "d5f92f93bdb49f332fa662ff1d0cc8700f02e4dc"
+    "chalk/chalk.d.ts": {
+      "commit": "1315d46f8066eec8c197914da88e98629ebc2254"
+    },
+    "minimist/minimist.d.ts": {
+      "commit": "1315d46f8066eec8c197914da88e98629ebc2254"
+    },
+    "node/node-0.12.d.ts": {
+      "commit": "1315d46f8066eec8c197914da88e98629ebc2254"
     }
   }
 }

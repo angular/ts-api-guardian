@@ -1,42 +1,100 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
-import main = require('../lib/main');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as main from '../lib/main';
+import {assertFileEqual, unlinkRecursively} from './helpers';
 
-describe('integration test', () => {
+describe('integration test: public api', () => {
+  let _warn = null;
+  let warnings: string[] = [];
+  beforeEach(() => {
+    _warn = console.warn;
+    console.warn = (...args: string[]) => warnings.push(args.join(' '));
+  });
+
+  afterEach(() => {
+    console.warn = _warn;
+    warnings = [];
+    _warn = null;
+  });
+
   it('should handle empty files',
-     () => { chai.assert.deepEqual(main.publicApi('test/fixtures/empty.ts'), []); });
+     () => { check('test/fixtures/empty.d.ts', 'test/fixtures/empty_expected.d.ts'); });
 
-  it('should include symbols', () => {
-    chai.assert.deepEqual(
-        main.publicApi('test/fixtures/simple.ts'), ['const A:string', 'var B:any']);
-  });
+  it('should include symbols',
+     () => { check('test/fixtures/simple.d.ts', 'test/fixtures/simple_expected.d.ts'); });
 
-  it('should include symbols reexported explicitly', () => {
-    chai.assert.deepEqual(
-        main.publicApi('test/fixtures/reexported.ts'), ['const A:string', 'var B:any']);
-  });
+  it('should include symbols reexported explicitly',
+     () => { check('test/fixtures/reexported.d.ts', 'test/fixtures/reexported_expected.d.ts'); });
 
   it('should include symbols reexported with *', () => {
-    chai.assert.deepEqual(
-        main.publicApi('test/fixtures/reexported_star.ts'), ['const A:string', 'var B:any']);
+    check('test/fixtures/reexported_star.d.ts', 'test/fixtures/reexported_star_expected.d.ts');
   });
 
   it('should include members of classes and interfaces', () => {
-    chai.assert.deepEqual(main.publicApi('test/fixtures/classes_and_interfaces.ts'), [
-      'A', 'A.field:string', 'A.method(a:string):number', 'B', 'B.field:A', 'C',
-      'C.constructor(someProp:string, propWithDefault:any=3, privateProp:any, protectedProp:number)',
-      'C.someProp:string', 'C.propWithDefault:any=3', 'C.protectedProp:number //protected'
-    ]);
+    check(
+        'test/fixtures/classes_and_interfaces.d.ts',
+        'test/fixtures/classes_and_interfaces_expected.d.ts');
   });
 
   it('should include members reexported classes', () => {
-    chai.assert.deepEqual(
-        main.publicApi('test/fixtures/reexported_classes.ts'),
-        ['A', 'A.field:string', 'A.method(a:string):number']);
+    check(
+        'test/fixtures/reexported_classes.d.ts', 'test/fixtures/reexported_classes_expected.d.ts');
   });
 
-  it('should support imports with prefixes', () => {
+  it('should remove reexported external symbols', () => {
+    check('test/fixtures/reexported_extern.d.ts', 'test/fixtures/reexported_extern_expected.d.ts');
     chai.assert.deepEqual(
-        main.publicApi('test/fixtures/imported_with_prefix.ts'), ['C', 'C.field:A']);
+        warnings, ['Warning: No export declaration found for symbol "CompilerHost"']);
+  });
+
+  it('should throw on passing a .ts file as an input', () => {
+    chai.assert.throws(() => {
+      main.publicApi('test/fixtures/empty.ts');
+    }, 'Source file "test/fixtures/empty.ts" is not a declaration file');
   });
 });
+
+describe('integration test: generateGoldenFile', () => {
+  const outDir = path.resolve(__dirname, '../../build/tmp');
+  const outFile = path.join(outDir, 'out.d.ts');
+  const deepOutFile = path.join(outDir, 'a/b/c/out.d.ts');
+
+  beforeEach(() => {
+    if (!fs.existsSync(outDir)) {
+      fs.mkdirSync(outDir);
+    }
+  });
+
+  afterEach(() => { unlinkRecursively(outDir); });
+
+
+  it('should generate a golden file', () => {
+    main.generateGoldenFile('test/fixtures/reexported_classes.d.ts', outFile);
+    assertFileEqual(outFile, 'test/fixtures/reexported_classes_expected.d.ts');
+  });
+
+  it('should generate a golden file with any ancestor directory created', () => {
+    main.generateGoldenFile('test/fixtures/reexported_classes.d.ts', deepOutFile);
+    assertFileEqual(deepOutFile, 'test/fixtures/reexported_classes_expected.d.ts');
+  });
+});
+
+describe('integration test: verifyAgainstGoldenFile', () => {
+  it('should check an entrypoint against a golden file on equal', () => {
+    const diff = main.verifyAgainstGoldenFile(
+        'test/fixtures/reexported_classes.d.ts', 'test/fixtures/reexported_classes_expected.d.ts');
+    chai.assert.equal(diff, '');
+  });
+
+  it('should check an entrypoint against a golden file with proper diff message', () => {
+    const diff = main.verifyAgainstGoldenFile(
+        'test/fixtures/verify_entrypoint.d.ts', 'test/fixtures/verify_expected.d.ts');
+    chai.assert.equal(diff, fs.readFileSync('test/fixtures/verify.patch').toString());
+  });
+});
+
+function check(sourceFile: string, expectedFile: string) {
+  chai.assert.equal(main.publicApi(sourceFile), fs.readFileSync(expectedFile).toString());
+}

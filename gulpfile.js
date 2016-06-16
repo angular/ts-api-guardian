@@ -11,7 +11,7 @@ var typescript = require('typescript');
 var mocha = require('gulp-mocha');
 
 gulp.task('check-format', function() {
-  return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts'])
+  return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts', '!test/fixtures/**/*.ts'])
       .pipe(formatter.checkFormat('file', clangFormat))
       .on('warning', onError);
 });
