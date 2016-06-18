@@ -70,6 +70,14 @@ describe('unit test', () => {
         ['var a:Array<Array<string>>', 'var b:string[][]']);
   });
 
+  it('should support tuples', () => {
+    check(
+        `
+      export var a: [string, number];
+    `,
+        ['var a:[string, number]']);
+  });
+
   it('should support map', () => {
     check(
         `

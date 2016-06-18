@@ -181,6 +181,10 @@ class TypeExtract extends Base<string> {
         const type = this.mapNode((<ts.ArrayTypeNode>node).elementType);
         return `${type}[]`;
 
+      case ts.SyntaxKind.TupleType:
+        const types = this.mapNodes((<ts.TupleTypeNode>node).elementTypes);
+        return `[${types.join(', ')}]`;
+
       case ts.SyntaxKind.FunctionType:
         return node.getText();
 
