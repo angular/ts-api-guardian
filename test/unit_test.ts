@@ -15,7 +15,7 @@ describe('unit test', () => {
         }
       }
     `,
-        ['A', 'A.field:string', 'A.method(a:string):number']);
+        ['A', 'A#field:string', 'A#method(a:string):number']);
   });
 
   it('should include constructors', () => {
@@ -36,7 +36,7 @@ describe('unit test', () => {
         method(a:string):number;
       }
     `,
-        ['A', 'A.field:string', 'A.method(a:string):number']);
+        ['A', 'A#field:string', 'A#method(a:string):number']);
   });
 
   it('should support generics', () => {
@@ -47,7 +47,7 @@ describe('unit test', () => {
         method(a:T):T { return null; }
       }
     `,
-        ['A<T>', 'A.field:T', 'A.method(a:T):T']);
+        ['A<T>', 'A#field:T', 'A#method(a:T):T']);
   });
 
   it('should support static members', () => {
@@ -99,9 +99,11 @@ describe('unit test', () => {
         set a(v:string){}
         get b() {}
         set b(v) {}
+        static get c(): number {}
+        static set c(v: number): void {}
       }
     `,
-        ['A', 'A.a:string', 'A.a=(v:string)', 'A.b:any', 'A.b=(v:any)']);
+        ['A', 'A#a:string', 'A#a=(v:string)', 'A#b:any', 'A#b=(v:any)', 'A.c:number', 'A.c=(v:number)']);
   });
 
   it('should support function declarations', () => {
@@ -149,7 +151,7 @@ describe('unit test', () => {
         private fc() {}
       }
     `,
-        ['A', 'A.fa():any', 'A.fb():any']);
+        ['A', 'A#fa():any', 'A#fb():any // protected']);
   });
 
   it('should ignore private props', () => {
@@ -161,7 +163,7 @@ describe('unit test', () => {
         private fc;
       }
     `,
-        ['A', 'A.fa:any', 'A.fb:any']);
+        ['A', 'A#fa:any', 'A#fb:any // protected']);
   });
 
   it('should ignore members staring with an _', () => {
@@ -183,7 +185,7 @@ describe('unit test', () => {
         ['b'](){}
       }
     `,
-        ['A', 'A.a():any']);
+        ['A', 'A#a():any']);
   });
 
   it('should include public properties defined via constructor', () => {
@@ -193,7 +195,7 @@ describe('unit test', () => {
         constructor(public prop: number, arg1: number) {}
       }
     `,
-        ['A', 'A.constructor(prop:number, arg1:number)', 'A.prop:number']);
+        ['A', 'A.constructor(prop:number, arg1:number)', 'A#prop:number']);
   });
 
   it('should include protected properties defined via constructor', () => {
@@ -203,7 +205,7 @@ describe('unit test', () => {
         constructor(protected prop: number, arg1: number) {}
       }
     `,
-        ['A', 'A.constructor(prop:number, arg1:number)', 'A.prop:number //protected']);
+        ['A', 'A.constructor(prop:number, arg1:number)', 'A#prop:number // protected']);
   });
 
   it('should include default value of public properties defined via constructor', () => {
@@ -213,7 +215,7 @@ describe('unit test', () => {
         constructor(public prop = 3) {}
       }
     `,
-        ['A', 'A.constructor(prop:any=3)', 'A.prop:any=3']);
+        ['A', 'A.constructor(prop:any=3)', 'A#prop:any=3']);
   });
 
   it('should ignore private properties defined via constructor', () => {
@@ -236,7 +238,18 @@ describe('unit test', () => {
 
     export function b(arg?: string) {}
   `,
-        ['A', 'A.constructor(arg?:number)', 'A.methodA(arg?:number):any', 'b(arg?:string):any']);
+        ['A', 'A.constructor(arg?:number)', 'A#methodA(arg?:number):any', 'b(arg?:string):any']);
+  });
+
+  it('should recognize static properties and methods', () => {
+    check(
+        `
+    export class A {
+      static prop: number,
+      static methodA(arg?: string):number {}
+    }`,
+        ['A', 'A.prop:number', 'A.methodA(arg?:string):number']
+    )
   });
 });
 

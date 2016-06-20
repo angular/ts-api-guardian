@@ -25,7 +25,7 @@ export default class PublicApiAggregator extends Base<string[]> {
         return this.getClassLike('enum', enumDecl);
 
       case ts.SyntaxKind.EnumMember:
-        return [getName(node)];
+        return ['.' + getName(node)];
 
       case ts.SyntaxKind.InterfaceDeclaration:
         const ifDecl = <ts.InterfaceDeclaration>node;
@@ -33,31 +33,31 @@ export default class PublicApiAggregator extends Base<string[]> {
 
       case ts.SyntaxKind.MethodDeclaration:
         if (this.shouldBeSkipped(node)) return [];
-        return [this.getFunctionLike(<ts.MethodDeclaration>node)];
+        return [getSeparator(node) + this.getFunctionLike(<ts.MethodDeclaration>node) + getAccessModifier(node)];
 
       case ts.SyntaxKind.PropertyDeclaration:
         if (this.shouldBeSkipped(node)) return [];
-        return [this.getProperty(<ts.PropertyDeclaration>node)];
+        return [getSeparator(node) + this.getProperty(<ts.PropertyDeclaration>node) + getAccessModifier(node)];
 
       case ts.SyntaxKind.Constructor:
         return [
-          this.getConstructor(<ts.ConstructorDeclaration>node),
+          '.' + this.getConstructor(<ts.ConstructorDeclaration>node),
           ...this.getConstructorProperties(<ts.ConstructorDeclaration>node)
         ];
 
       case ts.SyntaxKind.PropertySignature:
-        return [this.getProperty(<ts.PropertyDeclaration>node)];
+        return [getSeparator(node) + this.getProperty(<ts.PropertyDeclaration>node) + getAccessModifier(node)];
 
       case ts.SyntaxKind.MethodSignature:
-        return [this.getFunctionLike(<ts.MethodDeclaration>node)];
+        return [getSeparator(node) + this.getFunctionLike(<ts.MethodDeclaration>node) + getAccessModifier(node)];
 
       case ts.SyntaxKind.GetAccessor:
         if (this.shouldBeSkipped(node)) return [];
-        return [this.getGetter(<ts.AccessorDeclaration>node)];
+        return [getSeparator(node) + this.getGetter(<ts.AccessorDeclaration>node) + getAccessModifier(node)];
 
       case ts.SyntaxKind.SetAccessor:
         if (this.shouldBeSkipped(node)) return [];
-        return [this.getSetter(<ts.AccessorDeclaration>node)];
+        return [getSeparator(node) + this.getSetter(<ts.AccessorDeclaration>node) + getAccessModifier(node)];
 
       case ts.SyntaxKind.FunctionDeclaration:
         return [this.getFunctionLike(<ts.FunctionDeclaration>node)];
@@ -91,17 +91,9 @@ export default class PublicApiAggregator extends Base<string[]> {
   private getConstructorProperties(node: ts.FunctionLikeDeclaration): string[] {
     const properties: string[] = [];
     node.parameters.forEach(p => {
-      let includeProp = false;
-      let accessModifier = '';  // we default to "" and not print "public" for public properties
-      if (hasFlag(p, ts.NodeFlags.Public)) {
-        includeProp = true;
-      } else if (hasFlag(p, ts.NodeFlags.Protected)) {
-        includeProp = true;
-        accessModifier = '//protected';
-      }
-
-      if (includeProp) {
-        properties.push(`${this.getParameter(p)} ${accessModifier}`.trim());
+      // only add a property if it explicitly has public or protected access modifier
+      if (hasFlag(p, ts.NodeFlags.Public) || hasFlag(p, ts.NodeFlags.Protected)) {
+        properties.push(`#${this.getParameter(p)}${getAccessModifier(p)}`.trim());
       }
     });
     return properties;
@@ -139,7 +131,7 @@ export default class PublicApiAggregator extends Base<string[]> {
     const typeParams = typesToString(decl.typeParameters);
     const nameWithTypes = typeParams ? `${name}<${typeParams}>` : name;
     const members = this.mapNodes(decl.members);
-    return [nameWithTypes].concat(flatten(members).map(m => `${name}.${m}`));
+    return [nameWithTypes].concat(flatten(members).map(m => `${name}${m}`));
   }
 
   private getColonType(node: ts.Node): string {
@@ -272,6 +264,17 @@ function getInitializer(node: ts.ParameterDeclaration): string {
     return '';
   }
 }
+
+
+function getSeparator(node: ts.Node): string {
+  return (hasFlag(node, ts.NodeFlags.Static) ? '.' : '#');
+}
+
+
+function getAccessModifier(node: ts.Node): string {
+  return (hasFlag(node, ts.NodeFlags.Protected)) ? ' // protected' : '';
+}
+
 
 function removeSpaces(s: string): string {
   return s.replace(/\s+/g, '');
