@@ -88,6 +88,15 @@ describe('cli: e2e test', () => {
     chai.assert.equal(stdout, '');
     chai.assert.equal(status, 0);
   });
+
+  it('should respect --allowModuleIdentifiers', () => {
+    const {stdout, status} = execute([
+      '--verify', 'test/fixtures/module_identifier_expected.d.ts', '--allowModuleIdentifiers',
+      'foo', 'test/fixtures/module_identifier.d.ts'
+    ]);
+    chai.assert.equal(stdout, '');
+    chai.assert.equal(status, 0);
+  });
 });
 
 function copyFile(sourceFile: string, targetFile: string) {

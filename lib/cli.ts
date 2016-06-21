@@ -29,7 +29,10 @@ const CMD = 'ts-api-guardian';
 export function startCli() {
   const {argv, mode, errors} = parseArguments(process.argv.slice(2));
 
-  const options: SerializationOptions = {stripExportPattern: argv['stripExportPattern']};
+  const options: SerializationOptions = {
+    stripExportPattern: argv['stripExportPattern'],
+    allowModuleIdentifiers: [].concat(argv['allowModuleIdentifiers'])
+  };
 
   for (const error of errors) {
     console.warn(error);
@@ -76,7 +79,10 @@ export function parseArguments(input: string[]):
   const errors = [];
 
   const argv = minimist(input, {
-    string: ['out', 'outDir', 'verify', 'verifyDir', 'rootDir', 'stripExportPattern'],
+    string: [
+      'out', 'outDir', 'verify', 'verifyDir', 'rootDir', 'stripExportPattern',
+      'allowModuleIdentifiers'
+    ],
     boolean: [
       'help',
       // Options used by chalk automagically
@@ -149,7 +155,9 @@ Options:
 
         --rootDir <dir>                 Specify the root directory of input files
 
-        --stripExportPattern <regexp>   Do not output exports matching the pattern`);
+        --stripExportPattern <regexp>   Do not output exports matching the pattern
+        --allowModuleIdentifiers <identifier>
+                                        Whitelist identifier for "* as foo" imports`);
   process.exit(error ? 1 : 0);
 }
 

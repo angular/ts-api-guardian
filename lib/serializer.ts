@@ -12,6 +12,17 @@ export interface SerializationOptions {
    * Removes all exports matching the regular expression.
    */
   stripExportPattern?: RegExp;
+  /**
+   * Whitelists these identifiers as modules in the output. For example,
+   * ```
+   * import * as angular from './angularjs';
+   *
+   * export class Foo extends angular.Bar {}
+   * ```
+   * will produce `export class Foo extends angular.Bar {}` and requires
+   * whitelisting angular.
+   */
+  allowModuleIdentifiers?: string[];
 }
 
 export function publicApi(fileName: string, options: SerializationOptions = {}): string {
@@ -65,7 +76,7 @@ function emitResolvedDeclarations(
       if (output) {
         output += '\n';
       }
-      output += stripEmptyLines(getSanitizedText(decl)) + '\n';
+      output += stripEmptyLines(getSanitizedText(decl, options)) + '\n';
     } else {
       // This may happen for symbols re-exported from external modules.
       console.warn(`Warning: No export declaration found for symbol "${symbol.name}"`);
@@ -108,14 +119,25 @@ function symbolCompareFunction(a: ts.Symbol, b: ts.Symbol) {
 /**
  * Traverses the node tree to construct the text without comments and privates.
  */
-function getSanitizedText(node: ts.Node): string {
+function getSanitizedText(node: ts.Node, options: SerializationOptions): string {
   if (node.flags & ts.NodeFlags.Private) {
     return '';
   }
 
+  const firstQualifier: ts.Identifier = getFirstQualifier(node);
+
+  if (firstQualifier) {
+    if (!options.allowModuleIdentifiers ||
+        options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0) {
+      throw new Error(createErrorMessage(
+          firstQualifier, `Module identifier "${firstQualifier.text}" is not allowed. Remove it ` +
+              `from source or whitelist it via --allowModuleIdentifiers.`));
+    }
+  }
+
   const children = node.getChildren();
   if (children.length) {
-    return node.getChildren().map(n => getSanitizedText(n)).join('');
+    return node.getChildren().map(n => getSanitizedText(n, options)).join('');
   } else {
     const sourceText = node.getSourceFile().text;
     const ranges = ts.getLeadingCommentRanges(sourceText, node.pos);
@@ -131,4 +153,44 @@ function getSanitizedText(node: ts.Node): string {
 
 function stripEmptyLines(text: string): string {
   return text.split('\n').filter(x => !!x.length).join('\n');
+}
+
+/**
+ * Returns the first qualifier if the input node is a dotted expression.
+ */
+function getFirstQualifier(node: ts.Node): ts.Identifier {
+  if (node.kind === ts.SyntaxKind.PropertyAccessExpression) {
+    // For expression position
+    let lhs: ts.Node = node;
+    do {
+      lhs = (<ts.PropertyAccessExpression>lhs).expression;
+    } while (lhs && lhs.kind !== ts.SyntaxKind.Identifier);
+
+    return <ts.Identifier>lhs;
+
+  } else if (node.kind === ts.SyntaxKind.TypeReference) {
+    // For type position
+    let lhs: ts.Node = (<ts.TypeReferenceNode>node).typeName;
+    do {
+      lhs = (<ts.QualifiedName>lhs).left;
+    } while (lhs && lhs.kind !== ts.SyntaxKind.Identifier);
+
+    return <ts.Identifier>lhs;
+
+  } else {
+    return null;
+  }
+}
+
+function createErrorMessage(node: ts.Node, message): string {
+  const sourceFile = node.getSourceFile();
+  let position;
+  if (sourceFile) {
+    const {line, character} = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+    position = `${sourceFile.fileName}(${line + 1},${character + 1})`;
+  } else {
+    position = '<unknown>';
+  }
+
+  return `${position}: error: ${message}`;
 }
