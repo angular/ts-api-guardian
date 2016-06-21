@@ -1,18 +1,20 @@
 import {createPatch} from 'diff';
 import * as fs from 'fs';
 import * as path from 'path';
-import {publicApi} from './serializer';
+import {SerializationOptions, publicApi} from './serializer';
 
-export {publicApi} from './serializer';
+export {SerializationOptions, publicApi} from './serializer';
 
-export function generateGoldenFile(entrypoint: string, outFile: string): void {
-  const output = publicApi(entrypoint);
+export function generateGoldenFile(
+    entrypoint: string, outFile: string, options: SerializationOptions = {}): void {
+  const output = publicApi(entrypoint, options);
   ensureDirectory(path.dirname(outFile));
   fs.writeFileSync(outFile, output);
 }
 
-export function verifyAgainstGoldenFile(entrypoint: string, goldenFile: string): string {
-  const actual = publicApi(entrypoint);
+export function verifyAgainstGoldenFile(
+    entrypoint: string, goldenFile: string, options: SerializationOptions = {}): string {
+  const actual = publicApi(entrypoint, options);
   const expected = fs.readFileSync(goldenFile).toString();
 
   if (actual === expected) {

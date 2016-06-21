@@ -54,6 +54,12 @@ describe('integration test: public api', () => {
       main.publicApi('test/fixtures/empty.ts');
     }, 'Source file "test/fixtures/empty.ts" is not a declaration file');
   });
+
+  it('should respect serialization options', () => {
+    check(
+        'test/fixtures/underscored.d.ts', 'test/fixtures/underscored_expected.d.ts',
+        {stripExportPattern: /^__.*/});
+  });
 });
 
 describe('integration test: generateGoldenFile', () => {
@@ -79,6 +85,12 @@ describe('integration test: generateGoldenFile', () => {
     main.generateGoldenFile('test/fixtures/reexported_classes.d.ts', deepOutFile);
     assertFileEqual(deepOutFile, 'test/fixtures/reexported_classes_expected.d.ts');
   });
+
+  it('should respect serialization options', () => {
+    main.generateGoldenFile(
+        'test/fixtures/underscored.d.ts', outFile, {stripExportPattern: /^__.*/});
+    assertFileEqual(outFile, 'test/fixtures/underscored_expected.d.ts');
+  });
 });
 
 describe('integration test: verifyAgainstGoldenFile', () => {
@@ -93,8 +105,15 @@ describe('integration test: verifyAgainstGoldenFile', () => {
         'test/fixtures/verify_entrypoint.d.ts', 'test/fixtures/verify_expected.d.ts');
     chai.assert.equal(diff, fs.readFileSync('test/fixtures/verify.patch').toString());
   });
+
+  it('should respect serialization options', () => {
+    const diff = main.verifyAgainstGoldenFile(
+        'test/fixtures/underscored.d.ts', 'test/fixtures/underscored_expected.d.ts',
+        {stripExportPattern: /^__.*/});
+    chai.assert.equal(diff, '');
+  });
 });
 
-function check(sourceFile: string, expectedFile: string) {
-  chai.assert.equal(main.publicApi(sourceFile), fs.readFileSync(expectedFile).toString());
+function check(sourceFile: string, expectedFile: string, options: main.SerializationOptions = {}) {
+  chai.assert.equal(main.publicApi(sourceFile, options), fs.readFileSync(expectedFile).toString());
 }

@@ -1,7 +1,7 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
 import * as ts from 'typescript';
-import {publicApiInternal} from '../lib/serializer';
+import {publicApiInternal, SerializationOptions} from '../lib/serializer';
 
 const classesAndInterfaces = `
   export declare class A {
@@ -232,6 +232,19 @@ describe('unit test', () => {
     `;
     check({'file.d.ts': input}, expected);
   });
+
+  it('should skip symbols matching specified pattern', () => {
+    const input = `
+      export const __a__: string;
+      export class B {
+      }
+    `;
+    const expected = `
+      export class B {
+      }
+    `;
+    check({'file.d.ts': input}, expected, {stripExportPattern: /^__.*/});
+  });
 });
 
 function getMockHost(files: {[name: string]: string}): ts.CompilerHost {
@@ -251,8 +264,9 @@ function getMockHost(files: {[name: string]: string}): ts.CompilerHost {
   };
 }
 
-function check(files: {[name: string]: string}, expected: string) {
-  const actual = publicApiInternal(getMockHost(files), 'file.d.ts', {});
+function check(
+    files: {[name: string]: string}, expected: string, options: SerializationOptions = {}) {
+  const actual = publicApiInternal(getMockHost(files), 'file.d.ts', {}, options);
   chai.assert.equal(stripExtraIndentation(actual), stripExtraIndentation(expected));
 }
 

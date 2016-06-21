@@ -7,12 +7,20 @@ const baseTsOptions: ts.CompilerOptions = {
   moduleResolution: ts.ModuleResolutionKind.Classic
 };
 
-export function publicApi(fileName: string): string {
-  return publicApiInternal(ts.createCompilerHost(baseTsOptions), fileName, baseTsOptions);
+export interface SerializationOptions {
+  /**
+   * Removes all exports matching the regular expression.
+   */
+  stripExportPattern?: RegExp;
+}
+
+export function publicApi(fileName: string, options: SerializationOptions = {}): string {
+  return publicApiInternal(ts.createCompilerHost(baseTsOptions), fileName, baseTsOptions, options);
 }
 
 export function publicApiInternal(
-    host: ts.CompilerHost, fileName: string, tsOptions: ts.CompilerOptions): string {
+    host: ts.CompilerHost, fileName: string, tsOptions: ts.CompilerOptions,
+    options: SerializationOptions = {}): string {
   const entrypoint = path.normalize(fileName);
 
   if (!entrypoint.match(/\.d\.ts$/)) {
@@ -20,10 +28,11 @@ export function publicApiInternal(
   }
 
   const program = ts.createProgram([entrypoint], tsOptions, host);
-  return emitResolvedDeclarations(program, entrypoint);
+  return emitResolvedDeclarations(program, entrypoint, options);
 }
 
-function emitResolvedDeclarations(program: ts.Program, fileName: string): string {
+function emitResolvedDeclarations(
+    program: ts.Program, fileName: string, options: SerializationOptions): string {
   const sourceFile = program.getSourceFiles().filter(sf => sf.fileName === fileName)[0];
   if (!sourceFile) {
     throw new Error(`Source file "${fileName}" not found`);
@@ -35,6 +44,10 @@ function emitResolvedDeclarations(program: ts.Program, fileName: string): string
   // Sort all symbols so that the output is more deterministic
   resolvedSymbols.sort(symbolCompareFunction);
   for (const symbol of resolvedSymbols) {
+    if (options.stripExportPattern && symbol.name.match(options.stripExportPattern)) {
+      continue;
+    }
+
     let decl: ts.Node = symbol.valueDeclaration || symbol.declarations && symbol.declarations[0];
     if (!decl) {
       console.warn(`No declaration found for symbol "${symbol.name}"`);

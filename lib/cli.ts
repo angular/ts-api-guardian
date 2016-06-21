@@ -2,7 +2,8 @@ import * as chalk from 'chalk';
 import * as minimist from 'minimist';
 import {ParsedArgs} from 'minimist';
 import * as path from 'path';
-import {generateGoldenFile, verifyAgainstGoldenFile} from './main';
+
+import {SerializationOptions, generateGoldenFile, verifyAgainstGoldenFile} from './main';
 
 // Examples:
 //
@@ -28,6 +29,8 @@ const CMD = 'ts-api-guardian';
 export function startCli() {
   const {argv, mode, errors} = parseArguments(process.argv.slice(2));
 
+  const options: SerializationOptions = {stripExportPattern: argv['stripExportPattern']};
+
   for (const error of errors) {
     console.warn(error);
   }
@@ -39,13 +42,13 @@ export function startCli() {
 
     if (mode === 'out') {
       for (const {entrypoint, goldenFile} of targets) {
-        generateGoldenFile(entrypoint, goldenFile);
+        generateGoldenFile(entrypoint, goldenFile, options);
       }
     } else {  // mode === 'verify'
       let hasDiff = false;
 
       for (const {entrypoint, goldenFile} of targets) {
-        const diff = verifyAgainstGoldenFile(entrypoint, goldenFile);
+        const diff = verifyAgainstGoldenFile(entrypoint, goldenFile, options);
         if (diff) {
           hasDiff = true;
           const lines = diff.split('\n');
@@ -73,7 +76,7 @@ export function parseArguments(input: string[]):
   const errors = [];
 
   const argv = minimist(input, {
-    string: ['out', 'outDir', 'verify', 'verifyDir', 'rootDir'],
+    string: ['out', 'outDir', 'verify', 'verifyDir', 'rootDir', 'stripExportPattern'],
     boolean: [
       'help',
       // Options used by chalk automagically
@@ -136,15 +139,17 @@ function printUsageAndExit(error = false) {
         ${CMD} --verifyDir <golden file dir> [--rootDir .] <entrypoint .d.ts files>
 
 Options:
-        --help                  Show this usage message
+        --help                          Show this usage message
 
-        --out <file>            Write golden output to file
-        --outDir <dir>          Write golden file structure to directory
+        --out <file>                    Write golden output to file
+        --outDir <dir>                  Write golden file structure to directory
 
-        --verify <file>         Read golden input from file
-        --verifyDir <dir>       Read golden file structure from directory
+        --verify <file>                 Read golden input from file
+        --verifyDir <dir>               Read golden file structure from directory
 
-        --rootDir <dir>         Specify the root directory of input files`);
+        --rootDir <dir>                 Specify the root directory of input files
+
+        --stripExportPattern <regexp>   Do not output exports matching the pattern`);
   process.exit(error ? 1 : 0);
 }
 

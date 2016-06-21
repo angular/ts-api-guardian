@@ -4,7 +4,6 @@ import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {assertFileEqual, unlinkRecursively} from './helpers';
-import {startCli} from '../lib/cli';
 
 const BINARY = path.resolve(__dirname, '../../bin/ts-api-guardian');
 
@@ -66,6 +65,25 @@ describe('cli: e2e test', () => {
     const {stdout, status} = execute([
       '--verifyDir', outDir, '--rootDir', 'test/fixtures', 'test/fixtures/simple.d.ts',
       'test/fixtures/sorting.d.ts'
+    ]);
+    chai.assert.equal(stdout, '');
+    chai.assert.equal(status, 0);
+  });
+
+  it('should generate respecting --stripExportPattern', () => {
+    const {stdout, status} = execute([
+      '--out', path.join(outDir, 'underscored.d.ts'), '--stripExportPattern', '^__.*',
+      'test/fixtures/underscored.d.ts'
+    ]);
+    chai.assert.equal(status, 0);
+    assertFileEqual(
+        path.join(outDir, 'underscored.d.ts'), 'test/fixtures/underscored_expected.d.ts');
+  });
+
+  it('should verify respecting --stripExportPattern', () => {
+    const {stdout, status} = execute([
+      '--verify', 'test/fixtures/underscored_expected.d.ts', 'test/fixtures/underscored.d.ts',
+      '--stripExportPattern', '^__.*'
     ]);
     chai.assert.equal(stdout, '');
     chai.assert.equal(status, 0);
