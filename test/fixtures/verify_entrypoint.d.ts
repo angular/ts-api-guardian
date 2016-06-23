@@ -1,5 +1,5 @@
 export interface A {
-    a(arg: any[]): {[name: string]: number};
     c: number;
+    a(arg: any[]): {[name: string]: number};
 }
 export { b } from './verify_submodule';

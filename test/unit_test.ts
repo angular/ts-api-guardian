@@ -122,8 +122,8 @@ describe('unit test', () => {
       export declare function b(): boolean;
 
       export declare class C {
-          e: number;
           d: string;
+          e: number;
       }
 
       export interface D {
@@ -133,6 +133,68 @@ describe('unit test', () => {
       export declare var e: C;
 
       export declare type E = string;
+    `;
+    check({'file.d.ts': input}, expected);
+  });
+
+  it('should sort class members', () => {
+    const input = `
+      export class A {
+        f: number;
+        static foo(): void;
+        c: string;
+        static a: boolean;
+        constructor();
+        static bar(): void;
+      }
+    `;
+    const expected = `
+      export class A {
+        c: string;
+        f: number;
+        constructor();
+        static a: boolean;
+        static bar(): void;
+        static foo(): void;
+      }
+    `;
+    check({'file.d.ts': input}, expected);
+  });
+
+  it('should sort interface members', () => {
+    const input = `
+      export interface A {
+        (): void;
+        [key: string]: any;
+        c(): void;
+        a: number;
+        new (): Object;
+      }
+    `;
+    const expected = `
+      export interface A {
+        a: number;
+        (): void;
+        new (): Object;
+        [key: string]: any;
+        c(): void;
+      }
+    `;
+    check({'file.d.ts': input}, expected);
+  });
+
+  it('should sort two call signatures', () => {
+    const input = `
+      export interface A {
+        (b: number): void;
+        (a: number): void;
+      }
+    `;
+    const expected = `
+      export interface A {
+        (a: number): void;
+        (b: number): void;
+      }
     `;
     check({'file.d.ts': input}, expected);
   });
@@ -160,8 +222,8 @@ describe('unit test', () => {
       export declare function b(): boolean;
 
       export declare class C {
-          e: number;
           d: string;
+          e: number;
       }
 
       export interface D {
@@ -202,19 +264,19 @@ describe('unit test', () => {
        */
       export declare class A {
           /**
-           * A very useful field.
-           */
-          name: string;
-          /**
            * A very interesting getter.
            */
           b: string;
+          /**
+           * A very useful field.
+           */
+          name: string;
       }
     `;
     const expected = `
       export declare class A {
-          name: string;
           b: string;
+          name: string;
       }
     `;
     check({'file.d.ts': input}, expected);

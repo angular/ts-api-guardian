@@ -8,8 +8,8 @@ export interface B {
 }
 
 export declare class C {
-    someProp: string;
     propWithDefault: number;
     protected protectedProp: number;
+    someProp: string;
     constructor(someProp: string, propWithDefault: number, privateProp: any, protectedProp: number);
 }

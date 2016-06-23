@@ -116,6 +116,10 @@ function symbolCompareFunction(a: ts.Symbol, b: ts.Symbol) {
   return a.name.localeCompare(b.name);
 }
 
+function compareFunction<T>(a: T, b: T) {
+  return a === b ? 0 : a > b ? 1 : -1;
+}
+
 /**
  * Traverses the node tree to construct the text without comments and privates.
  */
@@ -135,9 +139,35 @@ function getSanitizedText(node: ts.Node, options: SerializationOptions): string 
     }
   }
 
-  const children = node.getChildren();
+  let children = node.getChildren();
   if (children.length) {
-    return node.getChildren().map(n => getSanitizedText(n, options)).join('');
+    // Sort declarations under a class or an interface
+    if (node.kind === ts.SyntaxKind.SyntaxList) {
+      switch (node.parent && node.parent.kind) {
+        case ts.SyntaxKind.ClassDeclaration:
+        case ts.SyntaxKind.InterfaceDeclaration: {
+          // There can be multiple SyntaxLists under a class or an interface,
+          // since SyntaxList is just an arbitrary data structure generated
+          // by Node#getChildren(). We need to check that we are sorting the
+          // right list.
+          if (children.every(node => node.kind in memberDeclarationOrder)) {
+            children = children.slice();
+            children.sort((a: ts.Declaration, b: ts.Declaration) => {
+              // Static after normal
+              return compareFunction(
+                         a.flags & ts.NodeFlags.Static, b.flags & ts.NodeFlags.Static) ||
+                  // Our predefined order
+                  compareFunction(memberDeclarationOrder[a.kind], memberDeclarationOrder[b.kind]) ||
+                  // Alphebetical order
+                  // We need safe dereferencing due to edge cases, e.g. having two call signatures
+                  compareFunction((a.name || a).getText(), (b.name || b).getText());
+            });
+          }
+          break;
+        }
+      }
+    }
+    return children.map(n => getSanitizedText(n, options)).join('');
   } else {
     const sourceText = node.getSourceFile().text;
     const ranges = ts.getLeadingCommentRanges(sourceText, node.pos);
@@ -150,6 +180,19 @@ function getSanitizedText(node: ts.Node, options: SerializationOptions): string 
     return sourceText.substring(tail, node.end);
   }
 }
+
+const memberDeclarationOrder = {
+  [ts.SyntaxKind.PropertySignature]: 0,
+  [ts.SyntaxKind.PropertyDeclaration]: 0,
+  [ts.SyntaxKind.GetAccessor]: 0,
+  [ts.SyntaxKind.SetAccessor]: 0,
+  [ts.SyntaxKind.CallSignature]: 1,
+  [ts.SyntaxKind.Constructor]: 2,
+  [ts.SyntaxKind.ConstructSignature]: 2,
+  [ts.SyntaxKind.IndexSignature]: 3,
+  [ts.SyntaxKind.MethodSignature]: 4,
+  [ts.SyntaxKind.MethodDeclaration]: 4
+};
 
 function stripEmptyLines(text: string): string {
   return text.split('\n').filter(x => !!x.length).join('\n');

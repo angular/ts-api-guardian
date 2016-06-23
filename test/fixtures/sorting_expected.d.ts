@@ -3,8 +3,8 @@ export declare const a: string;
 export declare function b(): boolean;
 
 export declare class C {
-    e: number;
     d: string;
+    e: number;
 }
 
 export interface D {
