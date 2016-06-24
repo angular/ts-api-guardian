@@ -45,8 +45,9 @@ describe('integration test: public api', () => {
 
   it('should remove reexported external symbols', () => {
     check('test/fixtures/reexported_extern.d.ts', 'test/fixtures/reexported_extern_expected.d.ts');
-    chai.assert.deepEqual(
-        warnings, ['Warning: No export declaration found for symbol "CompilerHost"']);
+    chai.assert.deepEqual(warnings, [
+      'test/fixtures/reexported_extern.d.ts(5,1): error: No export declaration found for symbol "CompilerHost"'
+    ]);
   });
 
   it('should throw on passing a .ts file as an input', () => {

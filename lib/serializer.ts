@@ -39,77 +39,175 @@ export function publicApiInternal(
   }
 
   const program = ts.createProgram([entrypoint], tsOptions, host);
-  return emitResolvedDeclarations(program, entrypoint, options);
+  return new ResolvedDeclarationEmitter(program, entrypoint, options).emit();
 }
 
-function emitResolvedDeclarations(
-    program: ts.Program, fileName: string, options: SerializationOptions): string {
-  const sourceFile = program.getSourceFiles().filter(sf => sf.fileName === fileName)[0];
-  if (!sourceFile) {
-    throw new Error(`Source file "${fileName}" not found`);
+interface Diagnostic {
+  type: string;  // 'warning' | 'error'
+  message: string;
+}
+
+class ResolvedDeclarationEmitter {
+  private program: ts.Program;
+  private fileName: string;
+  private typeChecker: ts.TypeChecker;
+  private options: SerializationOptions;
+  private diagnostics: Diagnostic[];
+
+  constructor(program: ts.Program, fileName: string, options: SerializationOptions) {
+    this.program = program;
+    this.fileName = fileName;
+    this.options = options;
+    this.diagnostics = [];
+
+    this.typeChecker = this.program.getTypeChecker();
   }
 
-  let output = '';
-
-  const resolvedSymbols = getResolvedSymbols(program, sourceFile);
-  // Sort all symbols so that the output is more deterministic
-  resolvedSymbols.sort(symbolCompareFunction);
-  for (const symbol of resolvedSymbols) {
-    if (options.stripExportPattern && symbol.name.match(options.stripExportPattern)) {
-      continue;
+  emit(): string {
+    const sourceFile = this.program.getSourceFiles().filter(sf => sf.fileName === this.fileName)[0];
+    if (!sourceFile) {
+      throw new Error(`Source file "${this.fileName}" not found`);
     }
 
-    let decl: ts.Node = symbol.valueDeclaration || symbol.declarations && symbol.declarations[0];
-    if (!decl) {
-      console.warn(`No declaration found for symbol "${symbol.name}"`);
-      continue;
-    }
+    let output = '';
 
-    // The declaration node may not be a complete statement, e.g. for var/const
-    // symbols. We need to find the complete export statement by traversing
-    // upwards.
-    while (!(decl.flags & ts.NodeFlags.Export) && decl.parent) {
-      decl = decl.parent;
-    }
-    if (decl.flags & ts.NodeFlags.Export) {
-      // Make an empty line between two exports
-      if (output) {
-        output += '\n';
+    const resolvedSymbols = this.getResolvedSymbols(sourceFile);
+    // Sort all symbols so that the output is more deterministic
+    resolvedSymbols.sort(symbolCompareFunction);
+
+    for (const symbol of resolvedSymbols) {
+      if (this.options.stripExportPattern && symbol.name.match(this.options.stripExportPattern)) {
+        continue;
       }
-      output += stripEmptyLines(getSanitizedText(decl, options)) + '\n';
-    } else {
-      // This may happen for symbols re-exported from external modules.
-      console.warn(`Warning: No export declaration found for symbol "${symbol.name}"`);
+
+      let decl: ts.Node = symbol.valueDeclaration || symbol.declarations && symbol.declarations[0];
+      if (!decl) {
+        this.diagnostics.push({
+          type: 'warning',
+          message: `${sourceFile.fileName}: error: No declaration found for symbol "${symbol.name}"`
+        });
+        continue;
+      }
+
+      // The declaration node may not be a complete statement, e.g. for var/const
+      // symbols. We need to find the complete export statement by traversing
+      // upwards.
+      while (!(decl.flags & ts.NodeFlags.Export) && decl.parent) {
+        decl = decl.parent;
+      }
+      if (decl.flags & ts.NodeFlags.Export) {
+        // Make an empty line between two exports
+        if (output) {
+          output += '\n';
+        }
+        output += stripEmptyLines(this.emitNode(decl)) + '\n';
+      } else {
+        // This may happen for symbols re-exported from external modules.
+        this.diagnostics.push({
+          type: 'warning',
+          message:
+              createErrorMessage(decl, `No export declaration found for symbol "${symbol.name}"`)
+        });
+      }
     }
+
+    if (this.diagnostics.length) {
+      const message = this.diagnostics.map(d => d.message).join('\n');
+      console.warn(message);
+      if (this.diagnostics.some(d => d.type === 'error')) {
+        throw new Error(message);
+      }
+    }
+
+    return output;
   }
 
-  return output;
-}
+  private getResolvedSymbols(sourceFile: ts.SourceFile): ts.Symbol[] {
+    const ms = (<any>sourceFile).symbol;
+    const rawSymbols = ms ? (this.typeChecker.getExportsOfModule(ms) || []) : [];
+    return rawSymbols.map(s => {
+      if (s.flags & ts.SymbolFlags.Alias) {
+        const resolvedSymbol = this.typeChecker.getAliasedSymbol(s);
 
-function getResolvedSymbols(program: ts.Program, sourceFile: ts.SourceFile): ts.Symbol[] {
-  const typeChecker = program.getTypeChecker();
+        // This will happen, e.g. for symbols re-exported from external modules.
+        if (!resolvedSymbol.valueDeclaration && !resolvedSymbol.declarations) {
+          return s;
+        }
+        if (resolvedSymbol.name !== s.name) {
+          throw new Error(
+              `Symbol "${resolvedSymbol.name}" was aliased as "${s.name}". ` +
+              `Aliases are not supported."`);
+        }
 
-  const ms = (<any>sourceFile).symbol;
-  const rawSymbols = ms ? (typeChecker.getExportsOfModule(ms) || []) : [];
-  return rawSymbols.map(s => {
-    if (s.flags & ts.SymbolFlags.Alias) {
-      const resolvedSymbol = typeChecker.getAliasedSymbol(s);
-
-      // This will happen, e.g. for symbols re-exported from external modules.
-      if (!resolvedSymbol.valueDeclaration && !resolvedSymbol.declarations) {
+        return resolvedSymbol;
+      } else {
         return s;
       }
-      if (resolvedSymbol.name !== s.name) {
-        throw new Error(
-            `Symbol "${resolvedSymbol.name}" was aliased as "${s.name}". ` +
-            `Aliases are not supported."`);
-      }
+    });
+  }
 
-      return resolvedSymbol;
-    } else {
-      return s;
+  emitNode(node: ts.Node) {
+    if (node.flags & ts.NodeFlags.Private) {
+      return '';
     }
-  });
+
+    const firstQualifier: ts.Identifier = getFirstQualifier(node);
+
+    if (firstQualifier) {
+      if (!this.options.allowModuleIdentifiers ||
+          this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0) {
+        this.diagnostics.push({
+          type: 'error',
+          message: createErrorMessage(
+              firstQualifier,
+              `Module identifier "${firstQualifier.text}" is not allowed. Remove it ` +
+                  `from source or whitelist it via --allowModuleIdentifiers.`)
+        });
+      }
+    }
+
+    let children = node.getChildren();
+    if (children.length) {
+      // Sort declarations under a class or an interface
+      if (node.kind === ts.SyntaxKind.SyntaxList) {
+        switch (node.parent && node.parent.kind) {
+          case ts.SyntaxKind.ClassDeclaration:
+          case ts.SyntaxKind.InterfaceDeclaration: {
+            // There can be multiple SyntaxLists under a class or an interface,
+            // since SyntaxList is just an arbitrary data structure generated
+            // by Node#getChildren(). We need to check that we are sorting the
+            // right list.
+            if (children.every(node => node.kind in memberDeclarationOrder)) {
+              children = children.slice();
+              children.sort((a: ts.Declaration, b: ts.Declaration) => {
+                // Static after normal
+                return compareFunction(
+                           a.flags & ts.NodeFlags.Static, b.flags & ts.NodeFlags.Static) ||
+                    // Our predefined order
+                    compareFunction(
+                           memberDeclarationOrder[a.kind], memberDeclarationOrder[b.kind]) ||
+                    // Alphebetical order
+                    // We need safe dereferencing due to edge cases, e.g. having two call signatures
+                    compareFunction((a.name || a).getText(), (b.name || b).getText());
+              });
+            }
+            break;
+          }
+        }
+      }
+      return children.map(n => this.emitNode(n)).join('');
+    } else {
+      const sourceText = node.getSourceFile().text;
+      const ranges = ts.getLeadingCommentRanges(sourceText, node.pos);
+      let tail = node.pos;
+      for (const range of ranges || []) {
+        if (range.end > tail) {
+          tail = range.end;
+        }
+      }
+      return sourceText.substring(tail, node.end);
+    }
+  }
 }
 
 function symbolCompareFunction(a: ts.Symbol, b: ts.Symbol) {
@@ -118,67 +216,6 @@ function symbolCompareFunction(a: ts.Symbol, b: ts.Symbol) {
 
 function compareFunction<T>(a: T, b: T) {
   return a === b ? 0 : a > b ? 1 : -1;
-}
-
-/**
- * Traverses the node tree to construct the text without comments and privates.
- */
-function getSanitizedText(node: ts.Node, options: SerializationOptions): string {
-  if (node.flags & ts.NodeFlags.Private) {
-    return '';
-  }
-
-  const firstQualifier: ts.Identifier = getFirstQualifier(node);
-
-  if (firstQualifier) {
-    if (!options.allowModuleIdentifiers ||
-        options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0) {
-      throw new Error(createErrorMessage(
-          firstQualifier, `Module identifier "${firstQualifier.text}" is not allowed. Remove it ` +
-              `from source or whitelist it via --allowModuleIdentifiers.`));
-    }
-  }
-
-  let children = node.getChildren();
-  if (children.length) {
-    // Sort declarations under a class or an interface
-    if (node.kind === ts.SyntaxKind.SyntaxList) {
-      switch (node.parent && node.parent.kind) {
-        case ts.SyntaxKind.ClassDeclaration:
-        case ts.SyntaxKind.InterfaceDeclaration: {
-          // There can be multiple SyntaxLists under a class or an interface,
-          // since SyntaxList is just an arbitrary data structure generated
-          // by Node#getChildren(). We need to check that we are sorting the
-          // right list.
-          if (children.every(node => node.kind in memberDeclarationOrder)) {
-            children = children.slice();
-            children.sort((a: ts.Declaration, b: ts.Declaration) => {
-              // Static after normal
-              return compareFunction(
-                         a.flags & ts.NodeFlags.Static, b.flags & ts.NodeFlags.Static) ||
-                  // Our predefined order
-                  compareFunction(memberDeclarationOrder[a.kind], memberDeclarationOrder[b.kind]) ||
-                  // Alphebetical order
-                  // We need safe dereferencing due to edge cases, e.g. having two call signatures
-                  compareFunction((a.name || a).getText(), (b.name || b).getText());
-            });
-          }
-          break;
-        }
-      }
-    }
-    return children.map(n => getSanitizedText(n, options)).join('');
-  } else {
-    const sourceText = node.getSourceFile().text;
-    const ranges = ts.getLeadingCommentRanges(sourceText, node.pos);
-    let tail = node.pos;
-    for (const range of ranges || []) {
-      if (range.end > tail) {
-        tail = range.end;
-      }
-    }
-    return sourceText.substring(tail, node.end);
-  }
 }
 
 const memberDeclarationOrder = {

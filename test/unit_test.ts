@@ -99,7 +99,8 @@ describe('unit test', () => {
     const expected = `
     `;
     check({'classes_and_interfaces.d.ts': classesAndInterfaces, 'file.d.ts': input}, expected);
-    chai.assert.deepEqual(warnings, ['Warning: No export declaration found for symbol "Foo"']);
+    chai.assert.deepEqual(
+        warnings, ['file.d.ts(1,1): error: No export declaration found for symbol "Foo"']);
   });
 
   it('should sort exports', () => {
