@@ -23,6 +23,11 @@ export interface SerializationOptions {
    * whitelisting angular.
    */
   allowModuleIdentifiers?: string[];
+  /**
+   * Warns or errors if stability annotations are missing on an export.
+   * Supports experimental, stable and deprecated.
+   */
+  onStabilityMissing?: string;  // 'warn' | 'error' | 'none'
 }
 
 export function publicApi(fileName: string, options: SerializationOptions = {}): string {
@@ -100,6 +105,21 @@ class ResolvedDeclarationEmitter {
         if (output) {
           output += '\n';
         }
+
+        // Print stability annotation
+        const sourceText = decl.getSourceFile().text;
+        const trivia = sourceText.substr(decl.pos, decl.getLeadingTriviaWidth());
+        const match = stabilityAnnotationPattern.exec(trivia);
+        if (match) {
+          output += `/** @${match[1]} */\n`;
+        } else if (['warn', 'error'].indexOf(this.options.onStabilityMissing) >= 0) {
+          this.diagnostics.push({
+            type: this.options.onStabilityMissing,
+            message: createErrorMessage(
+                decl, `No stability annotation found for symbol "${symbol.name}"`)
+          });
+        }
+
         output += stripEmptyLines(this.emitNode(decl)) + '\n';
       } else {
         // This may happen for symbols re-exported from external modules.
@@ -167,6 +187,7 @@ class ResolvedDeclarationEmitter {
     }
 
     let children = node.getChildren();
+    const sourceText = node.getSourceFile().text;
     if (children.length) {
       // Sort declarations under a class or an interface
       if (node.kind === ts.SyntaxKind.SyntaxList) {
@@ -195,9 +216,21 @@ class ResolvedDeclarationEmitter {
           }
         }
       }
-      return children.map(n => this.emitNode(n)).join('');
+
+      let output = children.map(n => this.emitNode(n)).join('');
+
+      // Print stability annotation for fields
+      if (node.kind in memberDeclarationOrder) {
+        const trivia = sourceText.substr(node.pos, node.getLeadingTriviaWidth());
+        const match = stabilityAnnotationPattern.exec(trivia);
+        if (match) {
+          // Add the annotation after the leading whitespace
+          output = output.replace(/^(\n\s*)/, `$1/** @${match[1]} */ `);
+        }
+      }
+
+      return output;
     } else {
-      const sourceText = node.getSourceFile().text;
       const ranges = ts.getLeadingCommentRanges(sourceText, node.pos);
       let tail = node.pos;
       for (const range of ranges || []) {
@@ -231,6 +264,8 @@ const memberDeclarationOrder = {
   [ts.SyntaxKind.MethodDeclaration]: 4
 };
 
+const stabilityAnnotationPattern = /@(experimental|stable|deprecated)\b/;
+
 function stripEmptyLines(text: string): string {
   return text.split('\n').filter(x => !!x.length).join('\n');
 }
@@ -262,7 +297,7 @@ function getFirstQualifier(node: ts.Node): ts.Identifier {
   }
 }
 
-function createErrorMessage(node: ts.Node, message): string {
+function createErrorMessage(node: ts.Node, message: string): string {
   const sourceFile = node.getSourceFile();
   let position;
   if (sourceFile) {

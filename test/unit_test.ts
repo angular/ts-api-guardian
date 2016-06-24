@@ -342,6 +342,79 @@ describe('unit test', () => {
     `;
     check({'file.d.ts': input}, expected);
   });
+
+  it('should keep stability annotations of exports in docstrings', () => {
+    const input = `
+      /**
+       * @deprecated This is useless now
+       */
+      export declare class A {
+      }
+      /**
+       * @experimental
+       */
+      export declare const b: string;
+      /**
+       * @stable
+       */
+      export declare var c: number;
+    `;
+    const expected = `
+      /** @deprecated */
+      export declare class A {
+      }
+
+      /** @experimental */
+      export declare const b: string;
+
+      /** @stable */
+      export declare var c: number;
+    `;
+    check({'file.d.ts': input}, expected);
+  });
+
+  it('should keep stability annotations of fields in docstrings', () => {
+    const input = `
+      export declare class A {
+        /**
+         * @stable
+         */
+        value: number;
+        /**
+         * @experimental
+         */
+        constructor();
+        /**
+         * @deprecated
+         */
+        foo(): void;
+      }
+    `;
+    const expected = `
+      export declare class A {
+        /** @stable */ value: number;
+        /** @experimental */ constructor();
+        /** @deprecated */ foo(): void;
+      }
+    `;
+    check({'file.d.ts': input}, expected);
+  });
+
+  it('should warn on onStabilityMissing: warn', () => {
+    const input = `
+      export declare class A {
+        constructor();
+      }
+    `;
+    const expected = `
+      export declare class A {
+        constructor();
+      }
+    `;
+    check({'file.d.ts': input}, expected, {onStabilityMissing: 'warn'});
+    chai.assert.deepEqual(
+        warnings, ['file.d.ts(1,1): error: No stability annotation found for symbol "A"']);
+  });
 });
 
 function getMockHost(files: {[name: string]: string}): ts.CompilerHost {
