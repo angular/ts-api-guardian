@@ -1,3 +1,3 @@
-# TS API GUARDIAN
+# Typescript API Guardian
 
-TODO: add readme
+Keeps track of public API surface of a typescript library.
