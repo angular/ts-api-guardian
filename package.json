@@ -32,7 +32,7 @@
   },
   "scripts": {
     "prepublish": "npm install tsd@^0.6.0 && tsd reinstall --overwrite && gulp compile",
-    "test": "gulp test"
+    "test": "gulp test.unit"
   },
   "repository": {},
   "keywords": [
