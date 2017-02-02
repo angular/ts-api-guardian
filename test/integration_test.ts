@@ -50,6 +50,10 @@ describe('integration test: public api', () => {
     ]);
   });
 
+  it('should support type literals', () => {
+    check('test/fixtures/type_literals.d.ts', 'test/fixtures/type_literals_expected.d.ts');
+  });
+
   it('should throw on passing a .ts file as an input', () => {
     chai.assert.throws(() => {
       main.publicApi('test/fixtures/empty.ts');
