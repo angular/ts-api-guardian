@@ -432,6 +432,7 @@ function getMockHost(files: {[name: string]: string}): ts.CompilerHost {
     getCanonicalFileName: (filename) => filename,
     getCurrentDirectory: () => './',
     getNewLine: () => '\n',
+    getDirectories: () => []
   };
 }
 
