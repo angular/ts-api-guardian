@@ -186,5 +186,4 @@ export function generateFileNamePairs(
       };
     });
   }
-  return null;
 }
