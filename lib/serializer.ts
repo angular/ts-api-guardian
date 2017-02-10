@@ -154,6 +154,9 @@ class ResolvedDeclarationEmitter {
           return s;
         }
         if (resolvedSymbol.name !== s.name) {
+          if (this.options.stripExportPattern && s.name.match(this.options.stripExportPattern)) {
+            return s;
+          }
           throw new Error(
               `Symbol "${resolvedSymbol.name}" was aliased as "${s.name}". ` +
               `Aliases are not supported."`);

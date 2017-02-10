@@ -80,6 +80,16 @@ describe('cli: e2e test', () => {
         path.join(outDir, 'underscored.d.ts'), 'test/fixtures/underscored_expected.d.ts');
   });
 
+  it('should not throw for aliased stripped exports', () => {
+    const {stdout, status} = execute([
+      '--out', path.join(outDir, 'stripped_alias.d.ts'), '--stripExportPattern', '^__.*',
+      'test/fixtures/stripped_alias.d.ts'
+    ]);
+    chai.assert.equal(status, 0);
+    assertFileEqual(
+        path.join(outDir, 'stripped_alias.d.ts'), 'test/fixtures/stripped_alias_expected.d.ts');
+  });
+
   it('should verify respecting --stripExportPattern', () => {
     const {stdout, status} = execute([
       '--verify', 'test/fixtures/underscored_expected.d.ts', 'test/fixtures/underscored.d.ts',
