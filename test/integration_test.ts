@@ -2,8 +2,9 @@
 import chai = require('chai');
 import * as fs from 'fs';
 import * as path from 'path';
+import * as eol from 'eol';
 import * as main from '../lib/main';
-import {assertFileEqual, unlinkRecursively} from './helpers';
+import {assertFileEqual, unlinkRecursively, removeEol} from './helpers';
 
 describe('integration test: public api', () => {
   let _warn = null;
@@ -108,7 +109,7 @@ describe('integration test: verifyAgainstGoldenFile', () => {
   it('should check an entrypoint against a golden file with proper diff message', () => {
     const diff = main.verifyAgainstGoldenFile(
         'test/fixtures/verify_entrypoint.d.ts', 'test/fixtures/verify_expected.d.ts');
-    chai.assert.equal(diff, fs.readFileSync('test/fixtures/verify.patch').toString());
+    chai.assert.equal(eol.auto(diff), eol.auto(fs.readFileSync('test/fixtures/verify.patch').toString()));
   });
 
   it('should respect serialization options', () => {
@@ -120,5 +121,5 @@ describe('integration test: verifyAgainstGoldenFile', () => {
 });
 
 function check(sourceFile: string, expectedFile: string, options: main.SerializationOptions = {}) {
-  chai.assert.equal(main.publicApi(sourceFile, options), fs.readFileSync(expectedFile).toString());
+  chai.assert.equal(removeEol(main.publicApi(sourceFile, options)), removeEol(fs.readFileSync(expectedFile).toString()));
 }

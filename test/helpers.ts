@@ -3,6 +3,11 @@ import chai = require('chai');
 import * as fs from 'fs';
 import * as path from 'path';
 
+export function removeEol(text: string) {
+  if (!text) return text;
+  return text.replace(/\r/g, '').replace(/\n/g, '');
+}
+
 export function unlinkRecursively(file: string) {
   if (fs.statSync(file).isDirectory()) {
     for (const f of fs.readdirSync(file)) {
@@ -16,5 +21,5 @@ export function unlinkRecursively(file: string) {
 
 export function assertFileEqual(actualFile: string, expectedFile: string) {
   chai.assert.equal(
-      fs.readFileSync(actualFile).toString(), fs.readFileSync(expectedFile).toString());
+      removeEol(fs.readFileSync(actualFile).toString()), removeEol(fs.readFileSync(expectedFile).toString()));
 }
