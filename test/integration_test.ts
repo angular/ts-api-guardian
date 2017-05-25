@@ -54,6 +54,10 @@ describe('integration test: public api', () => {
     check('test/fixtures/type_literals.d.ts', 'test/fixtures/type_literals_expected.d.ts');
   });
 
+  it('should support separate type and value exports', () => {
+    check('test/fixtures/separate_type_and_value.d.ts', 'test/fixtures/separate_type_and_value_expected.d.ts');
+  });
+
   it('should throw on passing a .ts file as an input', () => {
     chai.assert.throws(() => {
       main.publicApi('test/fixtures/empty.ts');
