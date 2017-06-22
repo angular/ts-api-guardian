@@ -177,8 +177,19 @@ class ResolvedDeclarationEmitter {
     const firstQualifier: ts.Identifier = getFirstQualifier(node);
 
     if (firstQualifier) {
-      if (!this.options.allowModuleIdentifiers ||
-          this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0) {
+      let isAllowed = false;
+
+      // Try to resolve the qualifier.
+      const resolvedSymbol = this.typeChecker.getSymbolAtLocation(firstQualifier);
+      if (resolvedSymbol && resolvedSymbol.declarations.length > 0) {
+        // If the qualifier can be resolved, and it's not a namespaced import, then it should be allowed.
+        isAllowed = resolvedSymbol.declarations.every(decl => decl.kind !== ts.SyntaxKind.NamespaceImport);
+      }
+
+      // If it is not allowed otherwise, it's allowed if it's on the list of allowed identifiers.
+      isAllowed = isAllowed || !(!this.options.allowModuleIdentifiers ||
+          this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0);
+      if (!isAllowed) {
         this.diagnostics.push({
           type: 'error',
           message: createErrorMessage(

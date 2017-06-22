@@ -54,6 +54,10 @@ describe('integration test: public api', () => {
     check('test/fixtures/type_literals.d.ts', 'test/fixtures/type_literals_expected.d.ts');
   });
 
+  it('should allow enums as types', () => {
+    check('test/fixtures/enum_as_type.d.ts', 'test/fixtures/enum_as_type_expected.d.ts');
+  });
+
   it('should throw on passing a .ts file as an input', () => {
     chai.assert.throws(() => {
       main.publicApi('test/fixtures/empty.ts');
