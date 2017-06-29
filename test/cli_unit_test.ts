@@ -1,5 +1,6 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
+import * as path from 'path';
 import * as ts from 'typescript';
 import {parseArguments, generateFileNamePairs} from '../lib/cli';
 
@@ -70,8 +71,8 @@ describe('cli: generateFileNamePairs', () => {
   it('should generate file pairs in multi-file mode according to current directory', () => {
     chai.assert.deepEqual(
         generateFileNamePairs({_: ['src/first.d.ts', 'src/second.d.ts'], outDir: 'bank'}, 'out'), [
-          {entrypoint: 'src/first.d.ts', goldenFile: 'bank/src/first.d.ts'},
-          {entrypoint: 'src/second.d.ts', goldenFile: 'bank/src/second.d.ts'}
+          {entrypoint: path.normalize('src/first.d.ts'), goldenFile: path.normalize('bank/src/first.d.ts')},
+          {entrypoint: path.normalize('src/second.d.ts'), goldenFile: path.normalize('bank/src/second.d.ts')}
         ]);
   });
 
@@ -80,8 +81,8 @@ describe('cli: generateFileNamePairs', () => {
         generateFileNamePairs(
             {_: ['src/first.d.ts', 'src/second.d.ts'], outDir: 'bank', rootDir: 'src'}, 'out'),
         [
-          {entrypoint: 'src/first.d.ts', goldenFile: 'bank/first.d.ts'},
-          {entrypoint: 'src/second.d.ts', goldenFile: 'bank/second.d.ts'}
+          {entrypoint: path.normalize('src/first.d.ts'), goldenFile: path.normalize('bank/first.d.ts')},
+          {entrypoint: path.normalize('src/second.d.ts'), goldenFile: path.normalize('bank/second.d.ts')}
         ]);
   });
 });

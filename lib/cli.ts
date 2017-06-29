@@ -181,7 +181,7 @@ export function generateFileNamePairs(
 
     return argv._.map(fileName => {
       return {
-        entrypoint: fileName,
+        entrypoint: path.normalize(fileName),
         goldenFile: path.join(goldenDir, path.relative(rootDir, fileName))
       };
     });

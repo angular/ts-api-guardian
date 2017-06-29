@@ -3,9 +3,11 @@ import chai = require('chai');
 import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
+import * as eol from 'eol';
 import {assertFileEqual, unlinkRecursively} from './helpers';
 
-const BINARY = path.resolve(__dirname, '../../bin/ts-api-guardian');
+const BINARY = path.resolve(__dirname, os.platform() === 'win32' ? '../../bin/ts-api-guardian.cmd' : '../../bin/ts-api-guardian');
 
 describe('cli: e2e test', () => {
   const outDir = path.resolve(__dirname, '../../build/tmp');
@@ -45,7 +47,7 @@ describe('cli: e2e test', () => {
   it('should verify golden file with --verify and exit with error on difference', () => {
     const {stdout, status} = execute(
         ['--verify', 'test/fixtures/verify_expected.d.ts', 'test/fixtures/verify_entrypoint.d.ts']);
-    chai.assert.equal(stdout, fs.readFileSync('test/fixtures/verify.patch').toString());
+    chai.assert.equal(eol.auto(stdout), eol.auto(fs.readFileSync('test/fixtures/verify.patch').toString()));
     chai.assert.equal(status, 1);
   });
 
@@ -127,7 +129,9 @@ function copyFile(sourceFile: string, targetFile: string) {
 }
 
 function execute(args: string[]): {stdout: string, stderr: string, status: number} {
-  const output = child_process.spawnSync(BINARY, args);
+  const options = os.platform() === 'win32' ? { shell: true, stdio: 'pipe', cwd: path.resolve(__dirname, '../../') } : undefined;
+  const output = child_process.spawnSync(BINARY, args, options);
+
   chai.assert(!output.error, 'Child process failed or timed out');
   chai.assert(!output.signal, `Child process killed by signal ${output.signal}`);
 

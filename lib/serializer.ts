@@ -69,7 +69,7 @@ class ResolvedDeclarationEmitter {
   }
 
   emit(): string {
-    const sourceFile = this.program.getSourceFiles().filter(sf => sf.fileName === this.fileName)[0];
+    const sourceFile = this.program.getSourceFiles().filter(sf => path.normalize(sf.fileName) === this.fileName)[0];
     if (!sourceFile) {
       throw new Error(`Source file "${this.fileName}" not found`);
     }
