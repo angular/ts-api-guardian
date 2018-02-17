@@ -1,4 +1,3 @@
-/// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
 import * as ts from 'typescript';
 import {publicApiInternal, SerializationOptions} from '../lib/serializer';

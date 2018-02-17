@@ -1,4 +1,3 @@
-/// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
 import * as fs from 'fs';
 import * as path from 'path';

@@ -32,7 +32,7 @@ var tsProject =
 gulp.task('compile', function() {
   hasError = false;
   var tsResult =
-      gulp.src(['lib/**/*.ts', 'typings/**/*.d.ts', 'node_modules/typescript/lib/typescript.d.ts'])
+      gulp.src(['lib/**/*.ts'])
           .pipe(sourcemaps.init())
           .pipe(ts(tsProject))
           .on('error', onError);
