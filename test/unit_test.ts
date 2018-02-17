@@ -1,4 +1,3 @@
-/// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
 import * as ts from 'typescript';
 import {publicApiInternal, SerializationOptions} from '../lib/serializer';
@@ -303,7 +302,8 @@ describe('unit test', () => {
       }
     `;
     checkThrows(
-        {'file.d.ts': input}, 'file.d.ts(2,32): error: Module identifier "foo" is not allowed. ' +
+        {'file.d.ts': input},
+        'file.d.ts(2,32): error: Module identifier "foo" is not allowed. ' +
             'Remove it from source or whitelist it via --allowModuleIdentifiers.');
   });
 
@@ -313,7 +313,8 @@ describe('unit test', () => {
       export type A = foo.A;
     `;
     checkThrows(
-        {'file.d.ts': input}, 'file.d.ts(2,17): error: Module identifier "foo" is not allowed. ' +
+        {'file.d.ts': input},
+        'file.d.ts(2,17): error: Module identifier "foo" is not allowed. ' +
             'Remove it from source or whitelist it via --allowModuleIdentifiers.');
   });
 
@@ -443,7 +444,9 @@ function check(
 }
 
 function checkThrows(files: {[name: string]: string}, error: string) {
-  chai.assert.throws(() => { publicApiInternal(getMockHost(files), 'file.d.ts', {}); }, error);
+  chai.assert.throws(() => {
+    publicApiInternal(getMockHost(files), 'file.d.ts', {});
+  }, error);
 }
 
 function stripExtraIndentation(text: string) {

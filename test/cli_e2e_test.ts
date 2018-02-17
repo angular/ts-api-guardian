@@ -1,4 +1,3 @@
-/// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
 import * as child_process from 'child_process';
 import * as fs from 'fs';
@@ -16,7 +15,9 @@ describe('cli: e2e test', () => {
     }
   });
 
-  afterEach(() => { unlinkRecursively(outDir); });
+  afterEach(() => {
+    unlinkRecursively(outDir);
+  });
 
   it('should print usage without any argument', () => {
     const {stderr} = execute([]);

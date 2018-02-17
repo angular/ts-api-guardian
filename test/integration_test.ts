@@ -1,4 +1,3 @@
-/// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
 import * as fs from 'fs';
 import * as path from 'path';
@@ -19,14 +18,17 @@ describe('integration test: public api', () => {
     _warn = null;
   });
 
-  it('should handle empty files',
-     () => { check('test/fixtures/empty.d.ts', 'test/fixtures/empty_expected.d.ts'); });
+  it('should handle empty files', () => {
+    check('test/fixtures/empty.d.ts', 'test/fixtures/empty_expected.d.ts');
+  });
 
-  it('should include symbols',
-     () => { check('test/fixtures/simple.d.ts', 'test/fixtures/simple_expected.d.ts'); });
+  it('should include symbols', () => {
+    check('test/fixtures/simple.d.ts', 'test/fixtures/simple_expected.d.ts');
+  });
 
-  it('should include symbols reexported explicitly',
-     () => { check('test/fixtures/reexported.d.ts', 'test/fixtures/reexported_expected.d.ts'); });
+  it('should include symbols reexported explicitly', () => {
+    check('test/fixtures/reexported.d.ts', 'test/fixtures/reexported_expected.d.ts');
+  });
 
   it('should include symbols reexported with *', () => {
     check('test/fixtures/reexported_star.d.ts', 'test/fixtures/reexported_star_expected.d.ts');
@@ -36,6 +38,10 @@ describe('integration test: public api', () => {
     check(
         'test/fixtures/classes_and_interfaces.d.ts',
         'test/fixtures/classes_and_interfaces_expected.d.ts');
+  });
+
+  it('should support keyof syntax', () => {
+    check('test/fixtures/keyof.d.ts', 'test/fixtures/keyof_expected.d.ts');
   });
 
   it('should include members reexported classes', () => {
@@ -82,7 +88,9 @@ describe('integration test: generateGoldenFile', () => {
     }
   });
 
-  afterEach(() => { unlinkRecursively(outDir); });
+  afterEach(() => {
+    unlinkRecursively(outDir);
+  });
 
 
   it('should generate a golden file', () => {
