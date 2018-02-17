@@ -14,7 +14,7 @@
     "chalk": "^2.3.1",
     "diff": "^2.2.3",
     "minimist": "^1.2.0",
-    "typescript": "2.0.10"
+    "typescript": "2.3.4"
   },
   "devDependencies": {
     "@types/chai": "^4.1.2",

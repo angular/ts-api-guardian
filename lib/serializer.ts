@@ -97,10 +97,10 @@ class ResolvedDeclarationEmitter {
       // The declaration node may not be a complete statement, e.g. for var/const
       // symbols. We need to find the complete export statement by traversing
       // upwards.
-      while (!(decl.flags & ts.NodeFlags.Export) && decl.parent) {
+      while (!((ts as any).getModifierFlags(decl) & ts.ModifierFlags.Export) && decl.parent) {
         decl = decl.parent;
       }
-      if (decl.flags & ts.NodeFlags.Export) {
+      if ((ts as any).getModifierFlags(decl) & ts.ModifierFlags.Export) {
         // Make an empty line between two exports
         if (output) {
           output += '\n';
@@ -170,7 +170,7 @@ class ResolvedDeclarationEmitter {
   }
 
   emitNode(node: ts.Node) {
-    if (node.flags & ts.NodeFlags.Private) {
+    if ((ts as any).getModifierFlags(node) & ts.ModifierFlags.Private) {
       return '';
     }
 
@@ -182,13 +182,16 @@ class ResolvedDeclarationEmitter {
       // Try to resolve the qualifier.
       const resolvedSymbol = this.typeChecker.getSymbolAtLocation(firstQualifier);
       if (resolvedSymbol && resolvedSymbol.declarations.length > 0) {
-        // If the qualifier can be resolved, and it's not a namespaced import, then it should be allowed.
-        isAllowed = resolvedSymbol.declarations.every(decl => decl.kind !== ts.SyntaxKind.NamespaceImport);
+        // If the qualifier can be resolved, and it's not a namespaced import, then it should be
+        // allowed.
+        isAllowed =
+            resolvedSymbol.declarations.every(decl => decl.kind !== ts.SyntaxKind.NamespaceImport);
       }
 
       // If it is not allowed otherwise, it's allowed if it's on the list of allowed identifiers.
-      isAllowed = isAllowed || !(!this.options.allowModuleIdentifiers ||
-          this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0);
+      isAllowed = isAllowed ||
+          !(!this.options.allowModuleIdentifiers ||
+            this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0);
       if (!isAllowed) {
         this.diagnostics.push({
           type: 'error',
@@ -217,7 +220,8 @@ class ResolvedDeclarationEmitter {
               children.sort((a: ts.Declaration, b: ts.Declaration) => {
                 // Static after normal
                 return compareFunction(
-                           a.flags & ts.NodeFlags.Static, b.flags & ts.NodeFlags.Static) ||
+                           (ts as any).getModifierFlags(a) & ts.ModifierFlags.Static,
+                           (ts as any).getModifierFlags(b) & ts.ModifierFlags.Static) ||
                     // Our predefined order
                     compareFunction(
                            memberDeclarationOrder[a.kind], memberDeclarationOrder[b.kind]) ||
@@ -231,7 +235,9 @@ class ResolvedDeclarationEmitter {
         }
       }
 
-      let output = children.map(n => this.emitNode(n)).join('');
+      let output = children.filter(n => n.kind !== ts.SyntaxKind.FirstJSDocTagNode)
+                       .map(n => this.emitNode(n))
+                       .join('');
 
       // Print stability annotation for fields
       if (node.kind in memberDeclarationOrder) {

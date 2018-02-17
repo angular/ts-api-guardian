@@ -3,7 +3,7 @@ import * as minimist from 'minimist';
 import {ParsedArgs} from 'minimist';
 import * as path from 'path';
 
-import {SerializationOptions, generateGoldenFile, verifyAgainstGoldenFile} from './main';
+import {generateGoldenFile, SerializationOptions, verifyAgainstGoldenFile} from './main';
 
 // Examples:
 //
