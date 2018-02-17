@@ -32,9 +32,9 @@ var tsProject =
 gulp.task('compile', function() {
   hasError = false;
   var tsResult =
-      gulp.src(['lib/**/*.ts', 'typings/**/*.d.ts', 'node_modules/typescript/lib/typescript.d.ts'])
+      gulp.src(['lib/**/*.ts'])
           .pipe(sourcemaps.init())
-          .pipe(ts(tsProject))
+          .pipe(tsProject())
           .on('error', onError);
   return merge([
     tsResult.dts.pipe(gulp.dest('build/definitions')),
@@ -49,9 +49,9 @@ gulp.task('test.compile', ['compile'], function(done) {
     done();
     return;
   }
-  return gulp.src(['test/*.ts', 'typings/**/*.d.ts'], {base: '.'})
+  return gulp.src(['test/*.ts'], {base: '.'})
       .pipe(sourcemaps.init())
-      .pipe(ts(tsProject))
+      .pipe(tsProject())
       .on('error', onError)
       .js.pipe(sourcemaps.write())
       .pipe(gulp.dest('build/'));  // '/test/' comes from base above.

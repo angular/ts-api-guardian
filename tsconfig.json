@@ -2,8 +2,12 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     "noEmit": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "lib": [
+      "es2015"
+    ]
   },
   "exclude": [
     "node_modules",

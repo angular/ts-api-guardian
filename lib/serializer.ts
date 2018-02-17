@@ -35,8 +35,8 @@ export function publicApi(fileName: string, options: SerializationOptions = {}):
 }
 
 export function publicApiInternal(
-    host: ts.CompilerHost, fileName: string, tsOptions: ts.CompilerOptions,
-    options: SerializationOptions = {}): string {
+  host: ts.CompilerHost, fileName: string, tsOptions: ts.CompilerOptions,
+  options: SerializationOptions = {}): string {
   const entrypoint = path.normalize(fileName);
 
   if (!entrypoint.match(/\.d\.ts$/)) {
@@ -69,7 +69,7 @@ class ResolvedDeclarationEmitter {
   }
 
   emit(): string {
-    const sourceFile = this.program.getSourceFiles().filter(sf => sf.fileName === this.fileName)[0];
+    const sourceFile = this.program.getSourceFiles().find(sf => sf.fileName === this.fileName);
     if (!sourceFile) {
       throw new Error(`Source file "${this.fileName}" not found`);
     }
@@ -97,10 +97,11 @@ class ResolvedDeclarationEmitter {
       // The declaration node may not be a complete statement, e.g. for var/const
       // symbols. We need to find the complete export statement by traversing
       // upwards.
-      while (!(decl.flags & ts.NodeFlags.Export) && decl.parent) {
+      while (!hasModifier(decl, ts.SyntaxKind.ExportKeyword) && decl.parent) {
         decl = decl.parent;
       }
-      if (decl.flags & ts.NodeFlags.Export) {
+
+      if (hasModifier(decl, ts.SyntaxKind.ExportKeyword)) {
         // Make an empty line between two exports
         if (output) {
           output += '\n';
@@ -116,7 +117,7 @@ class ResolvedDeclarationEmitter {
           this.diagnostics.push({
             type: this.options.onStabilityMissing,
             message: createErrorMessage(
-                decl, `No stability annotation found for symbol "${symbol.name}"`)
+              decl, `No stability annotation found for symbol "${symbol.name}"`)
           });
         }
 
@@ -126,7 +127,7 @@ class ResolvedDeclarationEmitter {
         this.diagnostics.push({
           type: 'warning',
           message:
-              createErrorMessage(decl, `No export declaration found for symbol "${symbol.name}"`)
+            createErrorMessage(decl, `No export declaration found for symbol "${symbol.name}"`)
         });
       }
     }
@@ -158,8 +159,8 @@ class ResolvedDeclarationEmitter {
             return s;
           }
           throw new Error(
-              `Symbol "${resolvedSymbol.name}" was aliased as "${s.name}". ` +
-              `Aliases are not supported."`);
+            `Symbol "${resolvedSymbol.name}" was aliased as "${s.name}". ` +
+            `Aliases are not supported."`);
         }
 
         return resolvedSymbol;
@@ -170,7 +171,7 @@ class ResolvedDeclarationEmitter {
   }
 
   emitNode(node: ts.Node) {
-    if (node.flags & ts.NodeFlags.Private) {
+    if (hasModifier(node, ts.SyntaxKind.PrivateKeyword)) {
       return '';
     }
 
@@ -188,14 +189,14 @@ class ResolvedDeclarationEmitter {
 
       // If it is not allowed otherwise, it's allowed if it's on the list of allowed identifiers.
       isAllowed = isAllowed || !(!this.options.allowModuleIdentifiers ||
-          this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0);
+        this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0);
       if (!isAllowed) {
         this.diagnostics.push({
           type: 'error',
           message: createErrorMessage(
-              firstQualifier,
-              `Module identifier "${firstQualifier.text}" is not allowed. Remove it ` +
-                  `from source or whitelist it via --allowModuleIdentifiers.`)
+            firstQualifier,
+            `Module identifier "${firstQualifier.text}" is not allowed. Remove it ` +
+            `from source or whitelist it via --allowModuleIdentifiers.`)
         });
       }
     }
@@ -217,13 +218,15 @@ class ResolvedDeclarationEmitter {
               children.sort((a: ts.Declaration, b: ts.Declaration) => {
                 // Static after normal
                 return compareFunction(
-                           a.flags & ts.NodeFlags.Static, b.flags & ts.NodeFlags.Static) ||
-                    // Our predefined order
-                    compareFunction(
-                           memberDeclarationOrder[a.kind], memberDeclarationOrder[b.kind]) ||
-                    // Alphebetical order
-                    // We need safe dereferencing due to edge cases, e.g. having two call signatures
-                    compareFunction((a.name || a).getText(), (b.name || b).getText());
+                  hasModifier(a, ts.SyntaxKind.StaticKeyword),
+                  hasModifier(b, ts.SyntaxKind.StaticKeyword)
+                ) ||
+                  // Our predefined order
+                  compareFunction(
+                    memberDeclarationOrder[a.kind], memberDeclarationOrder[b.kind]) ||
+                  // Alphebetical order
+                  // We need safe dereferencing due to edge cases, e.g. having two call signatures
+                  compareFunction(a.getText(), b.getText());
               });
             }
             break;
@@ -231,7 +234,10 @@ class ResolvedDeclarationEmitter {
         }
       }
 
-      let output = children.map(n => this.emitNode(n)).join('');
+      let output = children
+        .filter(x => x.kind !== ts.SyntaxKind.JSDocComment)
+        .map(n => this.emitNode(n))
+        .join('');
 
       // Print stability annotation for fields
       if (node.kind in memberDeclarationOrder) {
@@ -315,11 +321,15 @@ function createErrorMessage(node: ts.Node, message: string): string {
   const sourceFile = node.getSourceFile();
   let position;
   if (sourceFile) {
-    const {line, character} = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+    const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
     position = `${sourceFile.fileName}(${line + 1},${character + 1})`;
   } else {
     position = '<unknown>';
   }
 
   return `${position}: error: ${message}`;
+}
+
+function hasModifier(node: ts.Node, modifierKind: ts.SyntaxKind): boolean {
+  return !!node.modifiers && node.modifiers.some(x => x.kind === modifierKind);
 }
