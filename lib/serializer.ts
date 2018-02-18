@@ -27,8 +27,14 @@ export interface SerializationOptions {
    * Warns or errors if stability annotations are missing on an export.
    * Supports experimental, stable and deprecated.
    */
-  onStabilityMissing?: string;  // 'warn' | 'error' | 'none'
+  onStabilityMissing?: DiagnosticType;
 }
+
+export enum DiagnosticType {
+  Warn = 'warn',
+  Error = 'error',
+  None = 'none'
+};
 
 export function publicApi(fileName: string, options: SerializationOptions = {}): string {
   return publicApiInternal(ts.createCompilerHost(baseTsOptions), fileName, baseTsOptions, options);
@@ -48,7 +54,7 @@ export function publicApiInternal(
 }
 
 interface Diagnostic {
-  type: string;  // 'warning' | 'error'
+  type: DiagnosticType;
   message: string;
 }
 
@@ -88,7 +94,7 @@ class ResolvedDeclarationEmitter {
       let decl: ts.Node = symbol.valueDeclaration || symbol.declarations && symbol.declarations[0];
       if (!decl) {
         this.diagnostics.push({
-          type: 'warning',
+          type: DiagnosticType.Warn,
           message: `${sourceFile.fileName}: error: No declaration found for symbol "${symbol.name}"`
         });
         continue;
@@ -113,7 +119,7 @@ class ResolvedDeclarationEmitter {
         const match = stabilityAnnotationPattern.exec(trivia);
         if (match) {
           output += `/** @${match[1]} */\n`;
-        } else if (['warn', 'error'].indexOf(this.options.onStabilityMissing) >= 0) {
+        } else if ([DiagnosticType.Warn, DiagnosticType.Error].indexOf(this.options.onStabilityMissing) >= 0) {
           this.diagnostics.push({
             type: this.options.onStabilityMissing,
             message: createErrorMessage(
@@ -125,7 +131,7 @@ class ResolvedDeclarationEmitter {
       } else {
         // This may happen for symbols re-exported from external modules.
         this.diagnostics.push({
-          type: 'warning',
+          type: DiagnosticType.Warn,
           message:
             createErrorMessage(decl, `No export declaration found for symbol "${symbol.name}"`)
         });
@@ -135,7 +141,7 @@ class ResolvedDeclarationEmitter {
     if (this.diagnostics.length) {
       const message = this.diagnostics.map(d => d.message).join('\n');
       console.warn(message);
-      if (this.diagnostics.some(d => d.type === 'error')) {
+      if (this.diagnostics.some(d => d.type === DiagnosticType.Error)) {
         throw new Error(message);
       }
     }
@@ -192,7 +198,7 @@ class ResolvedDeclarationEmitter {
         this.options.allowModuleIdentifiers.indexOf(firstQualifier.text) < 0);
       if (!isAllowed) {
         this.diagnostics.push({
-          type: 'error',
+          type: DiagnosticType.Error,
           message: createErrorMessage(
             firstQualifier,
             `Module identifier "${firstQualifier.text}" is not allowed. Remove it ` +
