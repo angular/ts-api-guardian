@@ -300,26 +300,27 @@ function stripEmptyLines(text: string): string {
  * Returns the first qualifier if the input node is a dotted expression.
  */
 function getFirstQualifier(node: ts.Node): ts.Identifier {
-  if (node.kind === ts.SyntaxKind.PropertyAccessExpression) {
-    // For expression position
-    let lhs: ts.Node = node;
-    do {
-      lhs = (<ts.PropertyAccessExpression>lhs).expression;
-    } while (lhs && lhs.kind !== ts.SyntaxKind.Identifier);
+  switch (node.kind) {
+    case ts.SyntaxKind.PropertyAccessExpression: {
+      // For expression position
+      let lhs = node;
+      do {
+        lhs = (<ts.PropertyAccessExpression>lhs).expression;
+      } while (lhs && lhs.kind !== ts.SyntaxKind.Identifier);
 
-    return <ts.Identifier>lhs;
+      return <ts.Identifier>lhs;
+    }
+    case ts.SyntaxKind.TypeReference: {
+      // For type position
+      let lhs: ts.Node = (<ts.TypeReferenceNode>node).typeName;
+      do {
+        lhs = (<ts.QualifiedName>lhs).left;
+      } while (lhs && lhs.kind !== ts.SyntaxKind.Identifier);
 
-  } else if (node.kind === ts.SyntaxKind.TypeReference) {
-    // For type position
-    let lhs: ts.Node = (<ts.TypeReferenceNode>node).typeName;
-    do {
-      lhs = (<ts.QualifiedName>lhs).left;
-    } while (lhs && lhs.kind !== ts.SyntaxKind.Identifier);
-
-    return <ts.Identifier>lhs;
-
-  } else {
-    return null;
+      return <ts.Identifier>lhs;
+    }
+    default:
+      return null;
   }
 }
 
