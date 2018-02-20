@@ -1,6 +1,6 @@
 import * as chai from 'chai';
 import * as ts from 'typescript';
-import { publicApiInternal, SerializationOptions, DiagnosticType } from '../lib/serializer';
+import { publicApiInternal, SerializationOptions } from '../lib/serializer';
 
 const classesAndInterfaces = `
   export declare class A {
@@ -410,7 +410,7 @@ describe('unit test', () => {
         constructor();
       }
     `;
-    check({ 'file.d.ts': input }, expected, { onStabilityMissing: DiagnosticType.Warn });
+    check({ 'file.d.ts': input }, expected, { onStabilityMissing: 'warn' });
     chai.assert.deepEqual(
       warnings, ['file.d.ts(1,1): error: No stability annotation found for symbol "A"']);
   });
