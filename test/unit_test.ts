@@ -183,6 +183,41 @@ describe('unit test', () => {
     check({ 'file.d.ts': input }, expected);
   });
 
+  it('should sort class members including readonly', () => {
+    const input = `
+        export declare class DebugNode {
+          private _debugContext;
+          nativeNode: any;
+          listeners: any[];
+          parent: any | null;
+          constructor(nativeNode: any, parent: DebugNode | null, _debugContext: any);
+          readonly injector: any;
+          readonly componentInstance: any;
+          readonly context: any;
+          readonly references: {
+              [key: string]: any;
+          };
+          readonly providerTokens: any[];
+      }
+    `;
+    const expected = `
+        export declare class DebugNode {
+          readonly componentInstance: any;
+          readonly context: any;
+          readonly injector: any;
+          listeners: any[];
+          nativeNode: any;
+          parent: any | null;
+          readonly providerTokens: any[];
+          readonly references: {
+              [key: string]: any;
+          };
+          constructor(nativeNode: any, parent: DebugNode | null, _debugContext: any);
+      }
+    `;
+    check({ 'file.d.ts': input }, expected);
+  });
+
   it('should sort two call signatures', () => {
     const input = `
       export interface A {

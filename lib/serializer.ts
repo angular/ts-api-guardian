@@ -217,7 +217,7 @@ class ResolvedDeclarationEmitter {
             // right list.
             if (children.every(node => node.kind in memberDeclarationOrder)) {
               children = children.slice();
-              children.sort((a: ts.Declaration, b: ts.Declaration) => {
+              children.sort((a: ts.NamedDeclaration, b: ts.NamedDeclaration) => {
                 // Static after normal
                 return compareFunction(
                   hasModifier(a, ts.SyntaxKind.StaticKeyword),
@@ -228,7 +228,7 @@ class ResolvedDeclarationEmitter {
                     memberDeclarationOrder[a.kind], memberDeclarationOrder[b.kind]) ||
                   // Alphebetical order
                   // We need safe dereferencing due to edge cases, e.g. having two call signatures
-                  compareFunction(a.getText(), b.getText());
+                  compareFunction((a.name || a).getText(), (b.name || b).getText());
               });
             }
             break;
