@@ -3,7 +3,10 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noEmit": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "lib": [
+      "es2015"
+    ]
   },
   "exclude": [
     "node_modules",

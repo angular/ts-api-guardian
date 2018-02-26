@@ -1,5 +1,4 @@
-/// <reference path="../typings/chai/chai.d.ts"/>
-import chai = require('chai');
+import * as chai from 'chai';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as main from '../lib/main';
@@ -99,6 +98,11 @@ describe('integration test: generateGoldenFile', () => {
     main.generateGoldenFile(
         'test/fixtures/underscored.d.ts', outFile, {stripExportPattern: /^__.*/});
     assertFileEqual(outFile, 'test/fixtures/underscored_expected.d.ts');
+  });
+
+  it('should generate a golden file with keyof', () => {
+    main.generateGoldenFile('test/fixtures/keyof.d.ts', outFile);
+    assertFileEqual(outFile, 'test/fixtures/keyof_expected.d.ts');
   });
 });
 

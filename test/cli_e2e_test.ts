@@ -1,4 +1,3 @@
-/// <reference path="../typings/chai/chai.d.ts"/>
 import chai = require('chai');
 import * as child_process from 'child_process';
 import * as fs from 'fs';
