@@ -1,3 +1,3 @@
-# Typescript API Guardian
+# MOVED!!
 
-Keeps track of public API surface of a typescript library.
+`ts-api-guardian` has moved to https://github.com/angular/angular/tree/master/tools/ts-api-guardian
